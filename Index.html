@@ -1,0 +1,103 @@
+package com.example.data.local
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface UserProgressDao {
+
+    @Query("SELECT * FROM user_progress WHERE id = 1")
+    fun getUserProgressFlow(): Flow<UserProgressEntity?>
+
+    @Query("SELECT * FROM user_progress WHERE id = 1")
+    suspend fun getUserProgress(): UserProgressEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdateProgress(progress: UserProgressEntity)
+
+    @Query("SELECT * FROM lesson_records")
+    fun getAllLessonRecordsFlow(): Flow<List<LessonRecordEntity>>
+
+    @Query("SELECT * FROM lesson_records WHERE lessonId = :lessonId")
+    suspend fun getLessonRecord(lessonId: String): LessonRecordEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLessonRecord(record: LessonRecordEntity)
+
+    @Query("SELECT * FROM learned_words ORDER BY timesReviewed DESC")
+    fun getLearnedWordsFlow(): Flow<List<LearnedWordEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLearnedWords(words: List<LearnedWordEntity>)
+
+    @Query("UPDATE user_progress SET hearts = :newHearts WHERE id = 1")
+    suspend fun updateHearts(newHearts: Int)
+
+    @Query("UPDATE user_progress SET gems = gems + :gemsToAdd WHERE id = 1")
+    suspend fun addGems(gemsToAdd: Int)
+
+    @Query("UPDATE user_progress SET totalXp = totalXp + :xpToAdd WHERE id = 1")
+    suspend fun addXp(xpToAdd: Int)
+
+    @Transaction
+    suspend fun recordCompletedLesson(
+        lessonId: String,
+        score: Int,
+        totalQuestions: Int,
+        earnedXp: Int,
+        earnedGems: Int,
+        newWords: List<LearnedWordEntity>
+    ) {
+        val currentProgress = getUserProgress() ?: UserProgressEntity()
+        val existingRecord = getLessonRecord(lessonId)
+
+        val updatedCompletedLessons = if (existingRecord == null || !existingRecord.isCompleted) {
+            currentProgress.completedLessonsCount + 1
+        } else {
+            currentProgress.completedLessonsCount
+        }
+
+        insertLessonRecord(
+            LessonRecordEntity(
+                lessonId = lessonId,
+                isCompleted = true,
+                bestScore = maxOf(score, existingRecord?.bestScore ?: 0),
+                totalQuestions = totalQuestions,
+                completedAt = System.currentTimeMillis()
+            )
+        )
+
+        insertOrUpdateProgress(
+            currentProgress.copy(
+                totalXp = currentProgress.totalXp + earnedXp,
+                gems = currentProgress.gems + earnedGems,
+                completedLessonsCount = updatedCompletedLessons
+            )
+        )
+
+        if (newWords.isNotEmpty()) {
+            insertLearnedWords(newWords)
+        }
+    }
+
+    @Query("DELETE FROM user_progress")
+    suspend fun clearUserProgress()
+
+    @Query("DELETE FROM lesson_records")
+    suspend fun clearLessonRecords()
+
+    @Query("DELETE FROM learned_words")
+    suspend fun clearLearnedWords()
+
+    @Transaction
+    suspend fun resetProgress() {
+        clearUserProgress()
+        clearLessonRecords()
+        clearLearnedWords()
+        insertOrUpdateProgress(UserProgressEntity())
+    }
+}
