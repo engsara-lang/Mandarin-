@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>HanYu Learn - Mandarin Chinese (Complete HSK 1)</title>
+  
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,600,1,0" />
+
+  <!-- Firebase App & Firestore SDKs (v10 compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #131f24;
+      --surface-dark: #1b2a32;
+      --card-dark: #203540;
+      --border-dark: #2c4755;
+      --duo-green: #58cc02;
+      --duo-green-dark: #46a302;
+      --duo-green-light: #79e01f;
+      --duo-blue: #1cb0f6;
+      --duo-blue-dark: #1899d6;
+      --duo-gold: #ffc800;
+      --duo-gold-dark: #e5a400;
+      --duo-red: #ff4b4b;
+      --duo-red-dark: #d63838;
+      --duo-purple: #ce82ff;
+      --duo-purple-dark: #a855f7;
+      --text-main: #ffffff;
+      --text-muted: #8ca2ad;
+      --font-family: 'Nunito', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      overflow-x: hidden;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #app-container {
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-dark);
+      position: relative;
+      box-shadow: 0 0 40px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+
+    header.stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: var(--surface-dark);
+      border-bottom: 2px solid var(--border-dark);
+      z-index: 100;
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 12px;
+      transition: transform 0.1s ease;
+    }
+    .stat-badge:active { transform: scale(0.95); }
+    .stat-badge.streak { color: #ff9600; }
+    .stat-badge.gems { color: var(--duo-gold); }
+    .stat-badge.hearts { color: var(--duo-red); }
+    .stat-badge.sfx { color: var(--text-muted); }
+    .stat-icon { font-size: 22px; }
+
+    main.view-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: 80px;
+      scroll-behavior: smooth;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 16px;
+      animation: fadeIn 0.25s ease forwards;
+    }
+    .tab-content.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    nav.bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 68px;
+      background: var(--surface-dark);
+      border-top: 2px solid var(--border-dark);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .nav-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 800;
+      transition: color 0.15s, transform 0.1s;
+      padding: 6px 12px;
+      border-radius: 12px;
+    }
+    .nav-tab:active { transform: scale(0.92); }
+    .nav-tab.active { color: var(--duo-green); }
+    .nav-tab .material-symbols-rounded { font-size: 26px; }
+
+    .duo-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.08s ease;
+      position: relative;
+      padding: 14px 24px;
+      font-size: 15px;
+      width: 100%;
+    }
+    .duo-btn:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: none !important;
+    }
+    .duo-btn-green {
+      background: var(--duo-green);
+      color: #fff;
+      box-shadow: 0 4px 0 var(--duo-green-dark);
+    }
+    .duo-btn-blue {
+      background: var(--duo-blue);
+      color: #fff;
+      box-shadow: 0 4px 0 var(--duo-blue-dark);
+    }
+    .duo-btn-outline {
+      background: var(--card-dark);
+      color: var(--duo-blue);
+      border: 2px solid var(--border-dark);
+      box-shadow: 0 4px 0 var(--border-dark);
+    }
+    .duo-btn:disabled {
+      background: #37464f;
+      color: #6d828d;
+      box-shadow: 0 4px 0 #2b3840;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .card {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .unit-banner {
+      background: linear-gradient(135deg, #1b5e20, var(--duo-green-dark));
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      color: white;
+      box-shadow: 0 4px 0 #144417;
+      position: relative;
+      overflow: hidden;
+    }
+    .unit-banner::after {
+      content: "HSK 1";
+      position: absolute;
+      right: -10px;
+      bottom: -15px;
+      font-size: 64px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.08);
+      pointer-events: none;
+    }
+    .unit-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 800;
+      opacity: 0.9;
+    }
+    .unit-desc {
+      font-size: 19px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .path-tree {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 10px 0 30px;
+    }
+    .path-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s;
+    }
+    .path-node:active { transform: scale(0.92); }
+
+    .node-button {
+      width: 76px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--duo-green);
+      box-shadow: 0 6px 0 var(--duo-green-dark);
+      color: white;
+      position: relative;
+      transition: all 0.1s;
+    }
+    .node-button.completed {
+      background: var(--duo-gold);
+      box-shadow: 0 6px 0 var(--duo-gold-dark);
+      color: #3b2c00;
+    }
+    .node-button.locked {
+      background: #37464f;
+      box-shadow: 0 6px 0 #263339;
+      color: #72848f;
+      cursor: not-allowed;
+    }
+    .node-button .material-symbols-rounded { font-size: 34px; }
+
+    .node-crown {
+      position: absolute;
+      top: -10px;
+      right: -2px;
+      background: var(--duo-gold);
+      color: #3b2c00;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--surface-dark);
+      font-size: 14px;
+      box-shadow: 0 2px 0 var(--duo-gold-dark);
+    }
+    .node-label {
+      margin-top: 8px;
+      font-weight: 800;
+      font-size: 14px;
+      text-align: center;
+      color: var(--text-main);
+      max-width: 150px;
+    }
+    .node-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    #lesson-modal {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-dark);
+      display: none;
+      flex-direction: column;
+      z-index: 1000;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    #lesson-modal.active { display: flex; }
+
+    .lesson-header {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      gap: 16px;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    .progress-track {
+      flex: 1;
+      height: 14px;
+      background: #2b3940;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--duo-green);
+      border-radius: 10px;
+      transition: width 0.3s ease;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.3);
+    }
+    .lesson-hearts {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--duo-red);
+      font-weight: 800;
+      font-size: 16px;
+    }
+    .lesson-body {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .question-prompt {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+    .hanzi-hero {
+      text-align: center;
+      margin: 16px 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hero-chinese {
+      font-size: 52px;
+      font-weight: 900;
+      color: #fff;
+      font-family: 'Noto Sans SC', sans-serif;
+      line-height: 1.2;
+    }
+    .hero-pinyin {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--duo-blue);
+      margin-top: 4px;
+    }
+    .audio-play-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--duo-blue);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 14px;
+      margin-top: 12px;
+      cursor: pointer;
+      box-shadow: 0 3px 0 var(--duo-blue-dark);
+      transition: transform 0.1s;
+    }
+    .audio-play-pill:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: auto;
+      margin-bottom: 20px;
+    }
+    .option-card {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      font-weight: 800;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 3px 0 var(--border-dark);
+      transition: all 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .option-card:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+    .option-card.selected {
+      border-color: var(--duo-blue);
+      background: rgba(28, 176, 246, 0.15);
+      color: var(--duo-blue);
+      box-shadow: 0 3px 0 var(--duo-blue-dark);
+    }
+
+    .word-bank-tray {
+      min-height: 56px;
+      border-bottom: 2px solid var(--border-dark);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 0 16px;
+      margin-bottom: 24px;
+    }
+    .word-bank-pool {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .chip {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      box-shadow: 0 3px 0 var(--border-dark);
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+      color: white;
+      transition: transform 0.1s;
+    }
+    .chip:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+    .chip.used {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    .lesson-footer {
+      padding: 16px;
+      background: var(--surface-dark);
+      border-top: 2px solid var(--border-dark);
+      position: relative;
+    }
+    .feedback-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 20px 20px 24px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      animation: slideUp 0.2s ease forwards;
+    }
+    .feedback-sheet.active { display: flex; }
+    .feedback-sheet.correct {
+      background: #143521;
+      border-top: 3px solid var(--duo-green);
+      color: var(--duo-green-light);
+    }
+    .feedback-sheet.incorrect {
+      background: #39191e;
+      border-top: 3px solid var(--duo-red);
+      color: #ff9191;
+    }
+    .feedback-title {
+      font-size: 20px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feedback-desc {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .flashcard-wrapper {
+      perspective: 1000px;
+      margin: 16px auto;
+      width: 100%;
+      height: 300px;
+      cursor: pointer;
+    }
+    .flashcard-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.5s;
+      transform-style: preserve-3d;
+      border-radius: var(--radius-lg);
+    }
+    .flashcard-wrapper.flipped .flashcard-inner {
+      transform: rotateY(180deg);
+    }
+    .flashcard-front, .flashcard-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid var(--border-dark);
+      background: var(--surface-dark);
+      box-shadow: 0 6px 0 var(--border-dark);
+    }
+    .flashcard-back {
+      transform: rotateY(180deg);
+      background: #192730;
+      border-color: var(--duo-blue);
+      box-shadow: 0 6px 0 var(--duo-blue-dark);
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      color: white;
+      font-family: inherit;
+      font-size: 14px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 150px);
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .bubble-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      max-width: 85%;
+    }
+    .bubble-row.mei { align-self: flex-start; }
+    .bubble-row.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #37464f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 20px;
+      border: 2px solid var(--duo-green);
+    }
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 15px;
+    }
+    .bubble.mei {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      color: white;
+      border-top-left-radius: 4px;
+    }
+    .bubble.user {
+      background: var(--duo-blue);
+      color: white;
+      border-top-right-radius: 4px;
+    }
+    .bubble-hanzi {
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'Noto Sans SC', sans-serif;
+    }
+    .bubble-pinyin {
+      font-size: 13px;
+      color: #79caff;
+      margin-top: 2px;
+      font-weight: 700;
+    }
+    .bubble-trans {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .chat-input-bar {
+      display: flex;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 2px solid var(--border-dark);
+    }
+    .chat-input {
+      flex: 1;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      color: white;
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .rank-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--surface-dark);
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      border: 2px solid var(--border-dark);
+    }
+    .rank-num {
+      width: 28px;
+      font-weight: 900;
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+    .rank-num.top1 { color: var(--duo-gold); font-size: 20px; }
+    .rank-num.top2 { color: #d1d5db; font-size: 18px; }
+    .rank-num.top3 { color: #cd7f32; font-size: 18px; }
+
+    .user-stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .stat-card {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+  
+  <header class="stats-bar">
+    <div class="stat-badge streak" id="streak-badge" title="Daily Streak">
+      <span class="material-symbols-rounded stat-icon">local_fire_department</span>
+      <span id="stat-streak-val">3</span>
+    </div>
+    <div class="stat-badge gems" id="gems-badge" title="Gems">
+      <span class="material-symbols-rounded stat-icon">diamond</span>
+      <span id="stat-gems-val">120</span>
+    </div>
+    <div class="stat-badge hearts" id="hearts-badge" title="Hearts (Lives)">
+      <span class="material-symbols-rounded stat-icon">favorite</span>
+      <span id="stat-hearts-val">5</span>
+    </div>
+    <div class="stat-badge sfx" id="sfx-toggle" title="Toggle Sound">
+      <span class="material-symbols-rounded stat-icon" id="sfx-icon">volume_up</span>
+    </div>
+  </header>
+
+  <main class="view-container">
+    
+    <!-- Learn Path -->
+    <section id="tab-learn" class="tab-content active">
+      <div class="unit-banner">
+        <div class="unit-title">Complete HSK 1 Curriculum</div>
+        <div class="unit-desc">Master all 150 official HSK 1 words across 15 structured lessons</div>
+      </div>
+      <div class="path-tree" id="path-tree-container"></div>
+    </section>
+
+    <!-- Vocabulary Flashcards -->
+    <section id="tab-words" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h2 style="font-size: 18px; font-weight: 800;">HSK 1 Complete Vocab (150)</h2>
+        <span id="card-counter" style="font-weight: 700; color: var(--text-muted); font-size: 13px;">1 / 150</span>
+      </div>
+
+      <input type="text" id="vocab-search" class="search-input" placeholder="Search Hanzi, Pinyin, or English..." oninput="filterVocab()" />
+
+      <div class="flashcard-wrapper" id="flashcard" onclick="flipCard()">
+        <div class="flashcard-inner">
+          <div class="flashcard-front">
+            <span style="font-size: 12px; font-weight: 800; color: var(--duo-blue); text-transform: uppercase;">Tap to reveal</span>
+            <div id="fc-hanzi" style="font-size: 56px; font-weight: 900; margin: 12px 0; font-family: 'Noto Sans SC';">你好</div>
+            <div id="fc-pinyin" style="font-size: 20px; font-weight: 800; color: var(--duo-gold);">nǐ hǎo</div>
+            <div class="audio-play-pill" onclick="event.stopPropagation(); playCurrentCardAudio()">
+              <span class="material-symbols-rounded" style="font-size: 18px;">volume_up</span> Listen
+            </div>
+          </div>
+          <div class="flashcard-back">
+            <span style="font-size: 12px; font-weight: 800; color: var(--duo-green); text-transform: uppercase;">English Translation</span>
+            <div id="fc-english" style="font-size: 28px; font-weight: 900; margin: 12px 0;">Hello</div>
+            <div id="fc-example" style="font-size: 13px; color: var(--text-muted); text-align: center; max-width: 260px;">
+              你好！很高兴认识你。(Hello! Nice to meet you.)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; margin-top: 16px;">
+        <button class="duo-btn duo-btn-outline" onclick="prevCard()">
+          <span class="material-symbols-rounded">arrow_back</span> Prev
+        </button>
+        <button class="duo-btn duo-btn-green" onclick="nextCard()">
+          Next <span class="material-symbols-rounded">arrow_forward</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Roleplay Chat -->
+    <section id="tab-chat" class="tab-content">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="avatar" style="border-color: var(--duo-purple);">☕</div>
+          <div>
+            <div style="font-weight: 800; font-size: 16px;">Mei (咖啡师)</div>
+            <div style="font-size: 12px; color: var(--duo-green);">● Online • Beijing Coffee Shop</div>
+          </div>
+        </div>
+        <button class="duo-btn duo-btn-outline" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="resetRoleplay()">
+          Restart
+        </button>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-scroller"></div>
+        <div class="quick-chips" id="quick-replies"></div>
+        <div class="chat-input-bar">
+          <input type="text" id="chat-input" class="chat-input" placeholder="Type in Chinese or Pinyin..." onkeypress="handleChatKey(event)" />
+          <button class="duo-btn duo-btn-green" style="width: auto; padding: 0 18px;" onclick="sendUserMessage()">
+            <span class="material-symbols-rounded">send</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Leaderboard -->
+    <section id="tab-ranks" class="tab-content">
+      <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 6px;">Gold League 🏆</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Top 3 advance to the Diamond League in 2 days!</p>
+      <div id="leaderboard-list"></div>
+    </section>
+
+    <!-- Profile -->
+    <section id="tab-profile" class="tab-content">
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+        <div class="avatar" style="width: 64px; height: 64px; font-size: 32px;">🐼</div>
+        <div>
+          <h2 style="font-size: 22px; font-weight: 900;">Mandarin Explorer</h2>
+          <div style="font-size: 13px; color: var(--text-muted);">HSK 1 Master • Joined 2026</div>
+        </div>
+      </div>
+
+      <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 10px;">Overview Statistics</h3>
+      <div class="user-stat-grid">
+        <div class="stat-card">
+          <span class="material-symbols-rounded" style="font-size: 32px; color: #ff9600;">local_fire_department</span>
+          <div>
+            <div style="font-size: 20px; font-weight: 900;" id="prof-streak">3</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">DAY STREAK</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-rounded" style="font-size: 32px; color: var(--duo-purple);">bolt</span>
+          <div>
+            <div style="font-size: 20px; font-weight: 900;" id="prof-xp">160</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">TOTAL XP</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-rounded" style="font-size: 32px; color: var(--duo-gold);">diamond</span>
+          <div>
+            <div style="font-size: 20px; font-weight: 900;" id="prof-gems">120</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">GEMS</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-rounded" style="font-size: 32px; color: var(--duo-green);">menu_book</span>
+          <div>
+            <div style="font-size: 20px; font-weight: 900;" id="prof-words">150</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">WORDS MASTERED</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 24px;">
+        <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 8px;">Cloud Sync & Progress</h4>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Your learning progress is saved locally and synced automatically.
+        </p>
+        <button class="duo-btn duo-btn-outline" onclick="refillHearts()">
+          <span class="material-symbols-rounded">favorite</span> Refill Hearts (Free)
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-tab active" onclick="switchTab('learn', this)">
+      <span class="material-symbols-rounded">school</span>
+      Learn
+    </button>
+    <button class="nav-tab" onclick="switchTab('words', this)">
+      <span class="material-symbols-rounded">translate</span>
+      Words
+    </button>
+    <button class="nav-tab" onclick="switchTab('chat', this)">
+      <span class="material-symbols-rounded">chat</span>
+      Mei AI
+    </button>
+    <button class="nav-tab" onclick="switchTab('ranks', this)">
+      <span class="material-symbols-rounded">leaderboard</span>
+      Ranks
+    </button>
+    <button class="nav-tab" onclick="switchTab('profile', this)">
+      <span class="material-symbols-rounded">person</span>
+      Profile
+    </button>
+  </nav>
+
+  <div id="lesson-modal">
+    <div class="lesson-header">
+      <button class="close-btn" onclick="closeLesson()">&times;</button>
+      <div class="progress-track">
+        <div class="progress-fill" id="lesson-progress-bar" style="width: 0%;"></div>
+      </div>
+      <div class="lesson-hearts">
+        <span class="material-symbols-rounded">favorite</span>
+        <span id="lesson-hearts-val">5</span>
+      </div>
+    </div>
+
+    <div class="lesson-body" id="lesson-body"></div>
+
+    <div class="lesson-footer">
+      <button class="duo-btn duo-btn-green" id="lesson-check-btn" onclick="checkCurrentAnswer()">Check</button>
+      
+      <div class="feedback-sheet" id="feedback-sheet">
+        <div class="feedback-title" id="fb-title">
+          <span class="material-symbols-rounded" id="fb-icon">check_circle</span>
+          <span id="fb-heading">Nicely done!</span>
+        </div>
+        <div class="feedback-desc" id="fb-desc">Correct!</div>
+        <button class="duo-btn duo-btn-green" id="fb-continue-btn" onclick="nextQuestion()">Continue</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* Sound Synthesizer */
+  class SoundEngine {
+    constructor() { this.ctx = null; this.enabled = true; }
+    init() {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+      }
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+    }
+    playCorrect() {
+      if (!this.enabled) return; this.init(); const now = this.ctx.currentTime;
+      const osc1 = this.ctx.createOscillator(), gain1 = this.ctx.createGain();
+      osc1.type = 'sine'; osc1.frequency.setValueAtTime(783.99, now);
+      gain1.gain.setValueAtTime(0.3, now); gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc1.connect(gain1); gain1.connect(this.ctx.destination);
+      osc1.start(now); osc1.stop(now + 0.16);
+
+      const osc2 = this.ctx.createOscillator(), gain2 = this.ctx.createGain();
+      osc2.type = 'sine'; osc2.frequency.setValueAtTime(1046.50, now + 0.12);
+      gain2.gain.setValueAtTime(0.35, now + 0.12); gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc2.connect(gain2); gain2.connect(this.ctx.destination);
+      osc2.start(now + 0.12); osc2.stop(now + 0.36);
+    }
+    playIncorrect() {
+      if (!this.enabled) return; this.init(); const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(185, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.25);
+      gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(now); osc.stop(now + 0.26);
+    }
+    playFanfare() {
+      if (!this.enabled) return; this.init(); const now = this.ctx.currentTime;
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        const startTime = now + (idx * 0.1);
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.3, startTime); gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(startTime); osc.stop(startTime + 0.32);
+      });
+    }
+    playTap() {
+      if (!this.enabled) return; this.init(); const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+      osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+      gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(now); osc.stop(now + 0.05);
+    }
+  }
+  const sfx = new SoundEngine();
+
+  function speakChinese(text) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[a-zA-Z()]/g, '').trim();
+    const utterance = new SpeechSynthesisUtterance(cleanText || text);
+    utterance.lang = 'zh-CN'; utterance.rate = 0.85;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  let userProgress = {
+    streak: 3, gems: 120, hearts: 5, xp: 160, completedLessons: ['u1_l1'], wordsMastered: 150
+  };
+
+  function loadSavedState() {
+    const local = localStorage.getItem('hanyu_user_state_v2');
+    if (local) {
+      try { userProgress = Object.assign(userProgress, JSON.parse(local)); } catch(e) {}
+    }
+    updateStatsDisplay();
+  }
+  function saveState() {
+    localStorage.setItem('hanyu_user_state_v2', JSON.stringify(userProgress));
+    updateStatsDisplay();
+  }
+  function updateStatsDisplay() {
+    document.getElementById('stat-streak-val').textContent = userProgress.streak;
+    document.getElementById('stat-gems-val').textContent = userProgress.gems;
+    document.getElementById('stat-hearts-val').textContent = userProgress.hearts;
+    document.getElementById('prof-streak').textContent = userProgress.streak;
+    document.getElementById('prof-xp').textContent = userProgress.xp;
+    document.getElementById('prof-gems').textContent = userProgress.gems;
+    document.getElementById('prof-words').textContent = userProgress.wordsMastered;
+  }
+  function refillHearts() {
+    userProgress.hearts = 5; saveState(); sfx.playFanfare(); alert("Hearts restored to 5!");
+  }
+
+  /* =========================================================================
+     COMPLETE OFFICIAL HSK 1 VOCABULARY LIST (ALL 150 WORDS)
+     ========================================================================= */
+  const VOCABULARY_LIST = [
+    { hanzi: "爱", pinyin: "ài", english: "Love / To love", example: "我爱妈妈。(I love my mother.)" },
+    { hanzi: "八", pinyin: "bā", english: "Eight (8)", example: "这里有八个人。(There are eight people here.)" },
+    { hanzi: "爸爸", pinyin: "bàba", english: "Dad / Father", example: "我爸爸是医生。(My dad is a doctor.)" },
+    { hanzi: "杯子", pinyin: "bēizi", english: "Cup / Glass", example: "桌子上有一个杯子。(There is a cup on the table.)" },
+    { hanzi: "北京", pinyin: "Běijīng", english: "Beijing", example: "我想去北京。(I want to go to Beijing.)" },
+    { hanzi: "本", pinyin: "běn", english: "Measure word for books", example: "一本书。(One book.)" },
+    { hanzi: "不客气", pinyin: "bú kèqi", english: "You're welcome", example: "不客气！(You're welcome!)" },
+    { hanzi: "不", pinyin: "bù", english: "No / Not", example: "我不是老师。(I am not a teacher.)" },
+    { hanzi: "菜", pinyin: "cài", english: "Dish / Vegetable", example: "中国菜很好吃。(Chinese food is delicious.)" },
+    { hanzi: "茶", pinyin: "chá", english: "Tea", example: "请喝茶。(Please drink tea.)" },
+    { hanzi: "吃", pinyin: "chī", english: "To eat", example: "我们去吃饭吧。(Let's go eat.)" },
+    { hanzi: "出租车", pinyin: "chūzūchē", english: "Taxi", example: "我们坐出租车去。(We go by taxi.)" },
+    { hanzi: "打电话", pinyin: "dǎ diànhuà", english: "Make a phone call", example: "他在打电话。(He is making a phone call.)" },
+    { hanzi: "大", pinyin: "dà", english: "Big / Large", example: "这个苹果很大。(This apple is big.)" },
+    { hanzi: "的", pinyin: "de", english: "Possessive particle", example: "这是我的书。(This is my book.)" },
+    { hanzi: "点", pinyin: "diǎn", english: "O'clock / Point", example: "现在三点。(It is 3 o'clock now.)" },
+    { hanzi: "电脑", pinyin: "diànnǎo", english: "Computer", example: "买一台电脑。(Buy a computer.)" },
+    { hanzi: "电视", pinyin: "diànshì", english: "Television", example: "看电视。(Watch TV.)" },
+    { hanzi: "电影", pinyin: "diànyǐng", english: "Movie", example: "这个电影很好看。(This movie is good.)" },
+    { hanzi: "东西", pinyin: "dōngxi", english: "Thing / Stuff", example: "你想买什么东西？(What do you want to buy?)" },
+    { hanzi: "都", pinyin: "dōu", english: "Both / All", example: "我们都是学生。(We are all students.)" },
+    { hanzi: "读", pinyin: "dú", english: "Read", example: "读书。(Read a book.)" },
+    { hanzi: "对不起", pinyin: "duìbuqǐ", english: "Sorry", example: "对不起，我迟到了。(Sorry I am late.)" },
+    { hanzi: "多", pinyin: "duō", english: "Many / Much", example: "这里有很多人。(There are many people here.)" },
+    { hanzi: "多少", pinyin: "duōshao", english: "How much / How many", example: "这个多少钱？(How much is this?)" },
+    { hanzi: "儿子", pinyin: "érzi", english: "Son", example: "他有一个儿子。(He has a son.)" },
+    { hanzi: "二", pinyin: "èr", english: "Two (2)", example: "二月。(February.)" },
+    { hanzi: "饭店", pinyin: "fàndiàn", english: "Restaurant / Hotel", example: "我们在饭店吃饭。(We eat at a restaurant.)" },
+    { hanzi: "飞机", pinyin: "fēijī", english: "Airplane", example: "坐飞机去上海。(Fly to Shanghai.)" },
+    { hanzi: "分钟", pinyin: "fēnzhōng", english: "Minute", example: "等五分钟。(Wait five minutes.)" },
+    { hanzi: "高兴", pinyin: "gāoxìng", english: "Happy / Glad", example: "很高兴认识你！(Nice to meet you!)" },
+    { hanzi: "个", pinyin: "gè", english: "General measure word", example: "一个人。(One person.)" },
+    { hanzi: "工作", pinyin: "gōngzuò", english: "Work / Job", example: "你喜欢你的工作吗？(Do you like your job?)" },
+    { hanzi: "狗", pinyin: "gǒu", english: "Dog", example: "我家有一只狗。(My home has a dog.)" },
+    { hanzi: "汉语", pinyin: "Hànyǔ", english: "Mandarin Chinese language", example: "我在学习汉语。(I am learning Chinese.)" },
+    { hanzi: "好", pinyin: "hǎo", english: "Good / Fine", example: "你好！(Hello!)" },
+    { hanzi: "喝", pinyin: "hē", english: "To drink", example: "我想喝水。(I want to drink water.)" },
+    { hanzi: "和", pinyin: "hé", english: "And / With", example: "我和你。(You and I.)" },
+    { hanzi: "很", pinyin: "hěn", english: "Very", example: "我很好。(I am very good.)" },
+    { hanzi: "后面", pinyin: "hòumian", english: "Behind / Back", example: "学校后面。(Behind the school.)" },
+    { hanzi: "回", pinyin: "huí", english: "To return", example: "回家。(Go home.)" },
+    { hanzi: "会", pinyin: "huì", english: "Can / Know how to", example: "我会说汉语。(I can speak Chinese.)" },
+    { hanzi: "几", pinyin: "jǐ", english: "How many (small quantity)", example: "你有几个苹果？(How many apples do you have?)" },
+    { hanzi: "家", pinyin: "jiā", english: "Home / Family", example: "我家在北京。(My home is in Beijing.)" },
+    { hanzi: "叫", pinyin: "jiào", english: "To be called / Named", example: "你叫什么名字？(What is your name?)" },
+    { hanzi: "今天", pinyin: "jīntiān", english: "Today", example: "今天天气很好。(Today's weather is good.)" },
+    { hanzi: "九", pinyin: "jiǔ", english: "Nine (9)", example: "九点钟。(9 o'clock.)" },
+    { hanzi: "开", pinyin: "kāi", english: "To open / Drive", example: "开车。(Drive a car.)" },
+    { hanzi: "看", pinyin: "kàn", english: "Look / Watch / Read", example: "我看书。(I read a book.)" },
+    { hanzi: "看见", pinyin: "kànjiàn", english: "See / Catch sight of", example: "我看见他了。(I saw him.)" },
+    { hanzi: "块", pinyin: "kuài", english: "Yuan (currency) / Piece", example: "十块钱。(Ten yuan.)" },
+    { hanzi: "来", pinyin: "lái", english: "To come", example: "来到中国。(Come to China.)" },
+    { hanzi: "老师", pinyin: "lǎoshī", english: "Teacher", example: "王老师。(Teacher Wang.)" },
+    { hanzi: "了", pinyin: "le", english: "Completed action particle", example: "我吃了饭。(I ate food.)" },
+    { hanzi: "冷", pinyin: "lěng", english: "Cold", example: "今天太冷了。(Today is too cold.)" },
+    { hanzi: "里", pinyin: "lǐ", english: "Inside", example: "家里。(Inside the house.)" },
+    { hanzi: "零", pinyin: "líng", english: "Zero (0)", example: "二零二六年。(Year 2026.)" },
+    { hanzi: "六", pinyin: "liù", english: "Six (6)", example: "六个人。(Six people.)" },
+    { hanzi: "妈妈", pinyin: "māma", english: "Mom / Mother", example: "妈妈做饭。(Mom cooks.)" },
+    { hanzi: "吗", pinyin: "ma", english: "Question particle", example: "你好吗？(How are you?)" },
+    { hanzi: "买", pinyin: "mǎi", english: "To buy", example: "买东西。(Buy things.)" },
+    { hanzi: "猫", pinyin: "māo", english: "Cat", example: "小猫在睡觉。(The kitten is sleeping.)" },
+    { hanzi: "没关系", pinyin: "méi guānxi", english: "It doesn't matter / It's okay", example: "没关系！(It's okay!)" },
+    { hanzi: "没有", pinyin: "méiyǒu", english: "Don't have / Did not", example: "我没有钱。(I don't have money.)" },
+    { hanzi: "米饭", pinyin: "mǐfàn", english: "Cooked rice", example: "吃米饭。(Eat rice.)" },
+    { hanzi: "明天", pinyin: "míngtiān", english: "Tomorrow", example: "明天见！(See you tomorrow!)" },
+    { hanzi: "名字", pinyin: "míngzi", english: "Name", example: "你的名字。(Your name.)" },
+    { hanzi: "哪", pinyin: "nǎ", english: "Which", example: "你是哪国人？(Which country are you from?)" },
+    { hanzi: "哪儿", pinyin: "nǎr", english: "Where", example: "你在哪儿？(Where are you?)" },
+    { hanzi: "那", pinyin: "nà", english: "That", example: "那是谁？(Who is that?)" },
+    { hanzi: "呢", pinyin: "ne", english: "And you? / Modal particle", example: "你呢？(And you?)" },
+    { hanzi: "能", pinyin: "néng", english: "Can / Able to", example: "你能来吗？(Can you come?)" },
+    { hanzi: "你", pinyin: "nǐ", english: "You", example: "你好！(Hello!)" },
+    { hanzi: "年", pinyin: "nián", english: "Year", example: "今年是2026年。(This year is 2026.)" },
+    { hanzi: "女儿", pinyin: "nǚ'ér", english: "Daughter", example: "她是我女儿。(She is my daughter.)" },
+    { hanzi: "朋友", pinyin: "péngyou", english: "Friend", example: "我的好朋友。(My good friend.)" },
+    { hanzi: "漂亮", pinyin: "piàoliang", english: "Pretty / Beautiful", example: "这里的风景很漂亮。(The scenery here is beautiful.)" },
+    { hanzi: "苹果", pinyin: "píngguǒ", english: "Apple", example: "一个红苹果。(A red apple.)" },
+    { hanzi: "七", pinyin: "qī", english: "Seven (7)", example: "七天。(Seven days.)" },
+    { hanzi: "钱", pinyin: "qián", english: "Money", example: "要多少钱？(How much money is required?)" },
+    { hanzi: "前面", pinyin: "qiánmian", english: "In front / Ahead", example: "在公司前面。(In front of the company.)" },
+    { hanzi: "请", pinyin: "qǐng", english: "Please / To invite", example: "请坐。(Please sit.)" },
+    { hanzi: "去", pinyin: "qù", english: "To go", example: "去学校。(Go to school.)" },
+    { hanzi: "热", pinyin: "rè", english: "Hot", example: "天气很热。(The weather is hot.)" },
+    { hanzi: "人", pinyin: "rén", english: "Person / People", example: "中国人。(Chinese person.)" },
+    { hanzi: "认识", pinyin: "rènshi", english: "To know / Recognize", example: "很高兴认识你。(Nice to know you.)" },
+    { hanzi: "三", pinyin: "sān", english: "Three (3)", example: "三个人。(Three people.)" },
+    { hanzi: "商店", pinyin: "shāngdiàn", english: "Shop / Store", example: "去商店买东西。(Go to store to buy stuff.)" },
+    { hanzi: "上", pinyin: "shàng", english: "Above / On / Up", example: "桌子上。(On the table.)" },
+    { hanzi: "上午", pinyin: "shàngwǔ", english: "Morning", example: "今天上午。(This morning.)" },
+    { hanzi: "少", pinyin: "shǎo", english: "Few / Little", example: "不少人。(Not a few people.)" },
+    { hanzi: "谁", pinyin: "shéi", english: "Who / Whom", example: "他是谁？(Who is he?)" },
+    { hanzi: "什么", pinyin: "shénme", english: "What", example: "这是什么？(What is this?)" },
+    { hanzi: "十", pinyin: "shí", english: "Ten (10)", example: "十个苹果。(Ten apples.)" },
+    { hanzi: "时候", pinyin: "shíhou", english: "Time / Moment", example: "什么时候？(What time? / When?)" },
+    { hanzi: "是", pinyin: "shì", english: "To be (am/is/are)", example: "我是学生。(I am a student.)" },
+    { hanzi: "书", pinyin: "shū", english: "Book", example: "一本中文书。(A Chinese book.)" },
+    { hanzi: "水", pinyin: "shuǐ", english: "Water", example: "喝水。(Drink water.)" },
+    { hanzi: "水果", pinyin: "shuǐguǒ", english: "Fruit", example: "吃新鲜水果。(Eat fresh fruit.)" },
+    { hanzi: "睡觉", pinyin: "shuìjiào", english: "To sleep", example: "早点睡觉。(Go to sleep early.)" },
+    { hanzi: "说", pinyin: "shuō", english: "Speak / Say", example: "说话。(Talk / Speak.)" },
+    { hanzi: "说话", pinyin: "shuōhuà", english: "To speak / Talk", example: "别说话。(Don't speak.)" },
+    { hanzi: "四", pinyin: "sì", english: "Four (4)", example: "四点。(4 o'clock.)" },
+    { hanzi: "岁", pinyin: "suì", english: "Years old", example: "我二十岁。(I am 20 years old.)" },
+    { hanzi: "他", pinyin: "tā", english: "He / Him", example: "他是老师。(He is a teacher.)" },
+    { hanzi: "她", pinyin: "tā", english: "She / Her", example: "她很漂亮。(She is very pretty.)" },
+    { hanzi: "太", pinyin: "tài", english: "Too / Extremely", example: "太好了！(Too good! / Great!)" },
+    { hanzi: "天气", pinyin: "tiānqì", english: "Weather", example: "今天天气很好。(Weather is good today.)" },
+    { hanzi: "听", pinyin: "tīng", english: "Listen / Hear", example: "听音乐。(Listen to music.)" },
+    { hanzi: "同学", pinyin: "tóngxué", english: "Classmate", example: "我的大学同学。(My college classmate.)" },
+    { hanzi: "喂", pinyin: "wèi", english: "Hello (on phone) / Hey", example: "喂，你好！(Hello! - on phone)" },
+    { hanzi: "我", pinyin: "wǒ", english: "I / Me", example: "我是中国人。(I am Chinese.)" },
+    { hanzi: "我们", pinyin: "wǒmen", english: "We / Us", example: "我们去学校。(We go to school.)" },
+    { hanzi: "五", pinyin: "wǔ", english: "Five (5)", example: "五块钱。(Five yuan.)" },
+    { hanzi: "喜欢", pinyin: "xǐhuan", english: "To like", example: "我喜欢学中文。(I like learning Chinese.)" },
+    { hanzi: "下", pinyin: "xià", english: "Below / Under / Down", example: "椅子下面。(Under the chair.)" },
+    { hanzi: "下午", pinyin: "xiàwǔ", english: "Afternoon", example: "今天下午。(This afternoon.)" },
+    { hanzi: "下雨", pinyin: "xiàyǔ", english: "To rain", example: "外面下雨了。(It is raining outside.)" },
+    { hanzi: "先生", pinyin: "xiānsheng", english: "Mr. / Sir / Husband", example: "王先生。(Mr. Wang.)" },
+    { hanzi: "现在", pinyin: "xiànzài", english: "Now", example: "现在几点？(What time is it now?)" },
+    { hanzi: "想", pinyin: "xiǎng", english: "Want to / Think / Miss", example: "我想吃米饭。(I want to eat rice.)" },
+    { hanzi: "小", pinyin: "xiǎo", english: "Small / Little", example: "一只小狗。(A small dog.)" },
+    { hanzi: "小姐", pinyin: "xiǎojiě", english: "Miss / Young lady", example: "李小姐。(Miss Li.)" },
+    { hanzi: "些", pinyin: "xiē", english: "Some / A few", example: "这些东西。(These things.)" },
+    { hanzi: "写", pinyin: "xiě", english: "To write", example: "写汉字。(Write Chinese characters.)" },
+    { hanzi: "谢谢", pinyin: "xièxie", english: "Thank you", example: "谢谢你的帮助。(Thank you for your help.)" },
+    { hanzi: "星期", pinyin: "xīngqī", english: "Week", example: "星期一。(Monday.)" },
+    { hanzi: "学生", pinyin: "xuésheng", english: "Student", example: "他是留学生。(He is an exchange student.)" },
+    { hanzi: "学习", pinyin: "xuéxí", english: "Study / Learn", example: "学习汉语。(Study Chinese.)" },
+    { hanzi: "学校", pinyin: "xuéxiào", english: "School", example: "在学校。(At school.)" },
+    { hanzi: "一", pinyin: "yī", english: "One (1)", example: "一个。(One.)" },
+    { hanzi: "一点儿", pinyin: "yìdiǎnr", english: "A little bit", example: "会说一点儿。(Speak a little bit.)" },
+    { hanzi: "衣服", pinyin: "yīfu", english: "Clothes", example: "买新衣服。(Buy new clothes.)" },
+    { hanzi: "医生", pinyin: "yīshēng", english: "Doctor", example: "去医院看医生。(Go to hospital to see a doctor.)" },
+    { hanzi: "医院", pinyin: "yīyuàn", english: "Hospital", example: "他在医院。(He is in the hospital.)" },
+    { hanzi: "椅子", pinyin: "yǐzi", english: "Chair", example: "坐在椅子上。(Sit on the chair.)" },
+    { hanzi: "有", pinyin: "yǒu", english: "Have / Possess", example: "我有书。(I have books.)" },
+    { hanzi: "月", pinyin: "yuè", english: "Month / Moon", example: "一月。(January.)" },
+    { hanzi: "再见", pinyin: "zàijiàn", english: "Goodbye", example: "明天再见！(Goodbye see you tomorrow!)" },
+    { hanzi: "在", pinyin: "zài", english: "At / In / On", example: "我在家。(I am at home.)" },
+    { hanzi: "怎么", pinyin: "zěnme", english: "How (method/manner)", example: "怎么去？(How to go?)" },
+    { hanzi: "怎么样", pinyin: "zěnmeyàng", english: "How about / How is it?", example: "天气怎么样？(How is the weather?)" },
+    { hanzi: "这", pinyin: "zhè", english: "This", example: "这是什么？(What is this?)" },
+    { hanzi: "中国", pinyin: "Zhōngguó", english: "China", example: "我爱中国。(I love China.)" },
+    { hanzi: "中午", pinyin: "zhōngwǔ", english: "Noon / Midday", example: "中午十二点。(12 o'clock noon.)" },
+    { hanzi: "住", pinyin: "zhù", english: "To live / Reside", example: "我住在北京。(I live in Beijing.)" },
+    { hanzi: "桌子", pinyin: "zhuōzi", english: "Table / Desk", example: "书在桌子上。(The book is on the table.)" },
+    { hanzi: "字", pinyin: "zì", english: "Character / Word", example: "汉字。(Chinese character.)" },
+    { hanzi: "昨天", pinyin: "zuótiān", english: "Yesterday", example: "昨天我没去。(Yesterday I didn't go.)" },
+    { hanzi: "坐", pinyin: "zuò", english: "To sit / Travel by", example: "请坐。(Please sit.)" },
+    { hanzi: "做", pinyin: "zuò", english: "To do / Make", example: "做饭。(Cook food / Make a meal.)" }
+  ];
+
+  /* =========================================================================
+     COMPLETE 15-LESSON HSK 1 CURRICULUM
+     ========================================================================= */
+  const CURRICULUM_LESSONS = [
+    {
+      id: "u1_l1", title: "1. Basic Greetings", sub: "你好, 谢谢, 再见", icon: "handshake",
+      questions: [
+        { type: "multiple_choice", prompt: "What does '你好' mean?", hanzi: "你好", pinyin: "nǐ hǎo", options: ["Goodbye", "Hello", "Thank you", "Sorry"], correct: 1, explanation: "你好 (nǐ hǎo) means Hello." },
+        { type: "word_bank", prompt: "Assemble: 'Goodbye'", targetHanzi: "再见", pinyin: "zàijiàn", pool: ["见", "再", "好", "你"], correctSequence: ["再", "见"], explanation: "再见 means Goodbye." }
+      ]
+    },
+    {
+      id: "u1_l2", title: "2. Numbers 1 to 10", sub: "一, 二, 三, 四...", icon: "pin",
+      questions: [
+        { type: "multiple_choice", prompt: "What number is '五'?", hanzi: "五", pinyin: "wǔ", options: ["3", "4", "5", "6"], correct: 2, explanation: "五 (wǔ) is the number 5." },
+        { type: "word_bank", prompt: "Assemble: '1, 2, 3'", targetHanzi: "一二三", pinyin: "yī èr sān", pool: ["三", "一", "五", "二"], correctSequence: ["一", "二", "三"], explanation: "一(1) 二(2) 三(3)." }
+      ]
+    },
+    {
+      id: "u1_l3", title: "3. Pronouns & People", sub: "我, 你, 他, 她", icon: "person",
+      questions: [
+        { type: "multiple_choice", prompt: "What does '我们' mean?", hanzi: "我们", pinyin: "wǒmen", options: ["They", "You all", "We / Us", "I"], correct: 2, explanation: "我们 (wǒmen) means We or Us." },
+        { type: "multiple_choice", prompt: "Choose 'She / Her':", hanzi: "她", pinyin: "tā", options: ["他 (He)", "她 (She)", "我 (I)", "你 (You)"], correct: 1, explanation: "她 (tā) is female She/Her." }
+      ]
+    },
+    {
+      id: "u1_l4", title: "4. Family Members", sub: "爸爸, 妈妈, 儿子", icon: "diversity_3",
+      questions: [
+        { type: "multiple_choice", prompt: "What does '妈妈' mean?", hanzi: "妈妈", pinyin: "māma", options: ["Father", "Mother", "Daughter", "Son"], correct: 1, explanation: "妈妈 (māma) means Mom/Mother." },
+        { type: "word_bank", prompt: "Assemble: 'Dad and Mom'", targetHanzi: "爸爸 和 妈妈", pinyin: "bàba hé māma", pool: ["妈妈", "和", "爸爸", "有"], correctSequence: ["爸爸", "和", "妈妈"], explanation: "爸爸(Dad) 和(and) 妈妈(Mom)." }
+      ]
+    },
+    {
+      id: "u1_l5", title: "5. Food & Drinks", sub: "米饭, 茶, 水, 菜", icon: "restaurant",
+      questions: [
+        { type: "multiple_choice", prompt: "Select the word for 'Water':", hanzi: "水", pinyin: "shuǐ", options: ["茶 (Tea)", "水 (Water)", "米饭 (Rice)", "菜 (Dish)"], correct: 1, explanation: "水 (shuǐ) means Water." },
+        { type: "listening", prompt: "Listen and identify 'Cooked Rice':", hanzi: "米饭", pinyin: "mǐfàn", options: ["米饭 (Rice)", "水果 (Fruit)", "茶 (Tea)", "苹果 (Apple)"], correct: 0, explanation: "米饭 (mǐfàn) is cooked rice." }
+      ]
+    },
+    {
+      id: "u1_l6", title: "6. Verbs of Action", sub: "吃, 喝, 看, 听", icon: "directions_run",
+      questions: [
+        { type: "multiple_choice", prompt: "What does '看' mean?", hanzi: "看", pinyin: "kàn", options: ["To listen", "To look/watch", "To eat", "To speak"], correct: 1, explanation: "看 (kàn) means Look, Watch, or Read." },
+        { type: "word_bank", prompt: "Assemble: 'Drink tea'", targetHanzi: "喝茶", pinyin: "hē chá", pool: ["茶", "看", "喝", "吃"], correctSequence: ["喝", "茶"], explanation: "喝 (Drink) 茶 (Tea)." }
+      ]
+    },
+    {
+      id: "u1_l7", title: "7. Expressing Desires", sub: "想, 喜欢, 要", icon: "favorite",
+      questions: [
+        { type: "multiple_choice", prompt: "What does '喜欢' mean?", hanzi: "喜欢", pinyin: "xǐhuan", options: ["To love", "To like", "To want", "To think"], correct: 1, explanation: "喜欢 (xǐhuan) means to like." },
+        { type: "word_bank", prompt: "Assemble: 'I want to eat rice'", targetHanzi: "我想吃米饭", pinyin: "wǒ xiǎng chī mǐfàn", pool: ["吃", "我", "米饭", "想"], correctSequence: ["我", "想", "吃", "米饭"], explanation: "我(I) 想(want to) 吃(eat) 米饭(rice)." }
+      ]
+    },
+    {
+      id: "u1_l8", title: "8. Time & O'clock", sub: "点, 分钟, 现在", icon: "schedule",
+      questions: [
+        { type: "multiple_choice", prompt: "What does '现在' mean?", hanzi: "现在", pinyin: "xiànzài", options: ["Tomorrow", "Yesterday", "Now", "Morning"], correct: 2, explanation: "现在 (xiànzài) means Now." },
+        { type: "multiple_choice", prompt: "Select '3 o'clock':", hanzi: "三点", pinyin: "sān diǎn", options: ["三点", "四点", "五点", "二点"], correct: 0, explanation: "三(3) 点(o'clock)." }
+      ]
+    },
+    {
+      id: "u1_l9", title: "9. Days & Dates", sub: "今天, 明天, 星期", icon: "calendar_month",
+      questions: [
+        { type: "multiple_choice", prompt: "What day is '明天'?", hanzi: "明天", pinyin: "míngtiān", options: ["Today", "Yesterday", "Tomorrow", "Next week"], correct: 2, explanation: "明天 (míngtiān) means Tomorrow." },
+        { type: "word_bank", prompt: "Assemble: 'See you tomorrow'", targetHanzi: "明天见", pinyin: "míngtiān jiàn", pool: ["见", "今天", "明天", "再"], correctSequence: ["明天", "见"], explanation: "明天(Tomorrow) 见(See)." }
+      ]
+    },
+    {
+      id: "u1_l10", title: "10. Locations & Places", sub: "家, 学校, 医院, 商店", icon: "location_on",
+      questions: [
+        { type: "multiple_choice", prompt: "What place is '学校'?", hanzi: "学校", pinyin: "xuéxiào", options: ["Hospital", "School", "Store", "Restaurant"], correct: 1, explanation: "学校 (xuéxiào) means School." },
+        { type: "multiple_choice", prompt: "What does '在' mean?", hanzi: "在", pinyin: "zài", options: ["To go", "At / In / On", "To come", "Inside"], correct: 1, explanation: "在 (zài) indicates location (at/in/on)." }
+      ]
+    },
+    {
+      id: "u1_l11", title: "11. Questions & Answers", sub: "什么, 哪儿, 谁, 吗", icon: "help",
+      questions: [
+        { type: "multiple_choice", prompt: "What question word is '什么'?", hanzi: "什么", pinyin: "shénme", options: ["Who", "Where", "What", "How many"], correct: 2, explanation: "什么 (shénme) means What." },
+        { type: "word_bank", prompt: "Assemble: 'Who is he?'", targetHanzi: "他是谁", pinyin: "tā shì shéi", pool: ["谁", "是", "他", "什么"], correctSequence: ["他", "是", "谁"], explanation: "他(He) 是(is) 谁(who)." }
+      ]
+    },
+    {
+      id: "u1_l12", title: "12. Money & Shopping", sub: "钱, 块, 多少, 买", icon: "shopping_bag",
+      questions: [
+        { type: "multiple_choice", prompt: "What does '多少钱' mean?", hanzi: "多少钱", pinyin: "duōshao qián", options: ["What time?", "How much money?", "Where to buy?", "How many people?"], correct: 1, explanation: "多少钱 (duōshao qián) means How much money?" },
+        { type: "word_bank", prompt: "Assemble: 'Buy apple'", targetHanzi: "买苹果", pinyin: "mǎi píngguǒ", pool: ["苹果", "吃", "买", "水"], correctSequence: ["买", "苹果"], explanation: "买(Buy) 苹果(Apple)." }
+      ]
+    },
+    {
+      id: "u1_l13", title: "13. Transport & Directions", sub: "坐, 飞机, 出租车", icon: "directions_car",
+      questions: [
+        { type: "multiple_choice", prompt: "What vehicle is '出租车'?", hanzi: "出租车", pinyin: "chūzūchē", options: ["Airplane", "Bus", "Taxi", "Train"], correct: 2, explanation: "出租车 (chūzūchē) means Taxi." },
+        { type: "multiple_choice", prompt: "What does '前面' mean?", hanzi: "前面", pinyin: "qiánmian", options: ["Behind", "In front", "Inside", "Under"], correct: 1, explanation: "前面 (qiánmian) means In front / Ahead." }
+      ]
+    },
+    {
+      id: "u1_l14", title: "14. Weather & Feelings", sub: "热, 冷, 下雨, 高兴", icon: "thermostat",
+      questions: [
+        { type: "multiple_choice", prompt: "What does '天气' mean?", hanzi: "天气", pinyin: "tiānqì", options: ["Rain", "Weather", "Temperature", "Cold"], correct: 1, explanation: "天气 (tiānqì) means Weather." },
+        { type: "multiple_choice", prompt: "Select 'Very happy':", hanzi: "很高兴", pinyin: "hěn gāoxìng", options: ["太冷了", "很高兴", "下雨了", "很热"], correct: 1, explanation: "很(Very) 高兴(Happy)." }
+      ]
+    },
+    {
+      id: "u1_l15", title: "15. HSK 1 Final Exam", sub: "Mastery Review", icon: "workspace_premium",
+      questions: [
+        { type: "multiple_choice", prompt: "What is 'Hello' in Chinese?", hanzi: "你好", pinyin: "nǐ hǎo", options: ["谢谢", "再见", "你好", "对不起"], correct: 2, explanation: "你好 means Hello!" },
+        { type: "word_bank", prompt: "Assemble: 'I like studying Chinese'", targetHanzi: "我喜欢学习汉语", pinyin: "wǒ xǐhuan xuéxí Hànyǔ", pool: ["学习", "喜欢", "我", "汉语", "看"], correctSequence: ["我", "喜欢", "学习", "汉语"], explanation: "我(I) 喜欢(like) 学习(study) 汉语(Chinese)." }
+      ]
+    }
+  ];
+
+  /* Path tree rendering */
+  function renderPathTree() {
+    const container = document.getElementById('path-tree-container');
+    container.innerHTML = '';
+    CURRICULUM_LESSONS.forEach((lesson, index) => {
+      const isCompleted = userProgress.completedLessons.includes(lesson.id);
+      const isUnlocked = index === 0 || userProgress.completedLessons.includes(CURRICULUM_LESSONS[index - 1].id);
+
+      const node = document.createElement('div');
+      node.className = 'path-node';
+      node.onclick = () => {
+        if (isUnlocked) { sfx.playTap(); startLesson(lesson); }
+        else { sfx.playIncorrect(); alert("Complete the previous lesson to unlock this!"); }
+      };
+
+      node.innerHTML = `
+        <div class="node-button ${isCompleted ? 'completed' : (!isUnlocked ? 'locked' : '')}">
+          <span class="material-symbols-rounded">${lesson.icon}</span>
+          ${isCompleted ? '<div class="node-crown">👑</div>' : ''}
+        </div>
+        <div class="node-label">${lesson.title}</div>
+        <div class="node-sub">${lesson.sub}</div>
+      `;
+      container.appendChild(node);
+    });
+  }
+
+  /* Interactive Lesson Engine */
+  let activeLesson = null, currentQuestionIndex = 0, selectedOption = null, userWordSequence = [];
+
+  function startLesson(lesson) {
+    if (userProgress.hearts <= 0) {
+      alert("You are out of hearts! Tap 'Refill Hearts' in your profile to keep practicing.");
+      return;
+    }
+    activeLesson = lesson; currentQuestionIndex = 0; selectedOption = null; userWordSequence = [];
+    document.getElementById('lesson-hearts-val').textContent = userProgress.hearts;
+    document.getElementById('lesson-modal').classList.add('active');
+    loadQuestion();
+  }
+
+  function closeLesson() {
+    if (confirm("Quit lesson? Progress will be lost.")) {
+      document.getElementById('lesson-modal').classList.remove('active');
+    }
+  }
+
+  function loadQuestion() {
+    const q = activeLesson.questions[currentQuestionIndex];
+    selectedOption = null; userWordSequence = [];
+    document.getElementById('feedback-sheet').classList.remove('active', 'correct', 'incorrect');
+    const checkBtn = document.getElementById('lesson-check-btn');
+    checkBtn.style.display = 'block'; checkBtn.disabled = true;
+
+    const percent = (currentQuestionIndex / activeLesson.questions.length) * 100;
+    document.getElementById('lesson-progress-bar').style.width = `${percent}%`;
+
+    const body = document.getElementById('lesson-body');
+    body.innerHTML = `
+      <div class="question-prompt">${q.prompt}</div>
+      <div class="hanzi-hero">
+        <div class="hero-chinese">${q.hanzi}</div>
+        <div class="hero-pinyin">${q.pinyin}</div>
+        <div class="audio-play-pill" onclick="speakChinese('${q.hanzi}')">
+          <span class="material-symbols-rounded" style="font-size: 18px;">volume_up</span> Hear pronunciation
+        </div>
+      </div>
+    `;
+
+    if (q.type === 'multiple_choice' || q.type === 'listening') {
+      const grid = document.createElement('div');
+      grid.className = 'options-grid';
+      q.options.forEach((optText, idx) => {
+        const optCard = document.createElement('div');
+        optCard.className = 'option-card';
+        optCard.textContent = optText;
+        optCard.onclick = () => {
+          sfx.playTap();
+          document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+          optCard.classList.add('selected');
+          selectedOption = idx;
+          checkBtn.disabled = false;
+        };
+        grid.appendChild(optCard);
+      });
+      body.appendChild(grid);
+      if (q.type === 'listening') speakChinese(q.hanzi);
+    } else if (q.type === 'word_bank') {
+      const tray = document.createElement('div'); tray.className = 'word-bank-tray'; tray.id = 'word-tray';
+      const pool = document.createElement('div'); pool.className = 'word-bank-pool';
+
+      q.pool.forEach((word) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip'; chip.textContent = word;
+        chip.onclick = () => {
+          sfx.playTap(); userWordSequence.push(word); chip.classList.add('used');
+          renderTray(tray, pool, q); checkBtn.disabled = userWordSequence.length === 0;
+        };
+        pool.appendChild(chip);
+      });
+      body.appendChild(tray); body.appendChild(pool);
+    }
+  }
+
+  function renderTray(tray, pool, q) {
+    tray.innerHTML = '';
+    userWordSequence.forEach((word, idx) => {
+      const chip = document.createElement('div');
+      chip.className = 'chip'; chip.textContent = word;
+      chip.onclick = () => {
+        sfx.playTap(); userWordSequence.splice(idx, 1);
+        const match = Array.from(pool.children).find(c => c.textContent === word && c.classList.contains('used'));
+        if (match) match.classList.remove('used');
+        renderTray(tray, pool, q);
+        document.getElementById('lesson-check-btn').disabled = userWordSequence.length === 0;
+      };
+      tray.appendChild(chip);
+    });
+  }
+
+  function checkCurrentAnswer() {
+    const q = activeLesson.questions[currentQuestionIndex];
+    let isCorrect = false;
+
+    if (q.type === 'multiple_choice' || q.type === 'listening') isCorrect = selectedOption === q.correct;
+    else if (q.type === 'word_bank') isCorrect = JSON.stringify(userWordSequence) === JSON.stringify(q.correctSequence);
+
+    const sheet = document.getElementById('feedback-sheet');
+    document.getElementById('lesson-check-btn').style.display = 'none';
+
+    if (isCorrect) {
+      sfx.playCorrect();
+      sheet.className = 'feedback-sheet active correct';
+      document.getElementById('fb-icon').textContent = 'check_circle';
+      document.getElementById('fb-heading').textContent = 'Nicely done!';
+      document.getElementById('fb-desc').textContent = q.explanation;
+    } else {
+      sfx.playIncorrect();
+      userProgress.hearts = Math.max(0, userProgress.hearts - 1);
+      document.getElementById('lesson-hearts-val').textContent = userProgress.hearts;
+      saveState();
+
+      sheet.className = 'feedback-sheet active incorrect';
+      document.getElementById('fb-icon').textContent = 'cancel';
+      document.getElementById('fb-heading').textContent = 'Not quite!';
+      document.getElementById('fb-desc').textContent = q.explanation;
+    }
+  }
+
+  function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < activeLesson.questions.length) {
+      loadQuestion();
+    } else {
+      sfx.playFanfare();
+      document.getElementById('lesson-progress-bar').style.width = '100%';
+      userProgress.xp += 30; userProgress.gems += 20;
+      if (!userProgress.completedLessons.includes(activeLesson.id)) {
+        userProgress.completedLessons.push(activeLesson.id);
+      }
+      saveState(); renderPathTree();
+      alert(`🎉 Lesson Complete!\n\n+30 XP Earned\n+20 Gems Earned`);
+      document.getElementById('lesson-modal').classList.remove('active');
+    }
+  }
+
+  /* Flashcard logic */
+  let filteredVocab = VOCABULARY_LIST;
+  let currentCardIndex = 0;
+
+  function filterVocab() {
+    const q = document.getElementById('vocab-search').value.toLowerCase().trim();
+    if (!q) filteredVocab = VOCABULARY_LIST;
+    else {
+      filteredVocab = VOCABULARY_LIST.filter(item => 
+        item.hanzi.includes(q) || item.pinyin.toLowerCase().includes(q) || item.english.toLowerCase().includes(q)
+      );
+    }
+    currentCardIndex = 0;
+    renderCurrentCard();
+  }
+
+  function renderCurrentCard() {
+    if (filteredVocab.length === 0) {
+      document.getElementById('fc-hanzi').textContent = "None";
+      document.getElementById('fc-pinyin').textContent = "";
+      document.getElementById('fc-english').textContent = "No matches found";
+      document.getElementById('fc-example').textContent = "";
+      document.getElementById('card-counter').textContent = "0 / 0";
+      return;
+    }
+    const word = filteredVocab[currentCardIndex];
+    document.getElementById('fc-hanzi').textContent = word.hanzi;
+    document.getElementById('fc-pinyin').textContent = word.pinyin;
+    document.getElementById('fc-english').textContent = word.english;
+    document.getElementById('fc-example').textContent = word.example;
+    document.getElementById('card-counter').textContent = `${currentCardIndex + 1} / ${filteredVocab.length}`;
+    document.getElementById('flashcard').classList.remove('flipped');
+  }
+
+  function flipCard() { sfx.playTap(); document.getElementById('flashcard').classList.toggle('flipped'); }
+  function nextCard() {
+    if (filteredVocab.length === 0) return;
+    sfx.playTap(); currentCardIndex = (currentCardIndex + 1) % filteredVocab.length; renderCurrentCard();
+  }
+  function prevCard() {
+    if (filteredVocab.length === 0) return;
+    sfx.playTap(); currentCardIndex = (currentCardIndex - 1 + filteredVocab.length) % filteredVocab.length; renderCurrentCard();
+  }
+  function playCurrentCardAudio() {
+    if (filteredVocab.length === 0) return;
+    speakChinese(filteredVocab[currentCardIndex].hanzi);
+  }
+
+  /* Mei Chat Bot */
+  const roleplayScript = [
+    { mei: "你好！欢迎光临。请问你想喝点什么？", pinyin: "Nǐ hǎo! Huānyíng guānglín. Qǐngwèn nǐ xiǎng hē diǎn shénme?", english: "Hello! Welcome. What would you like to drink?", chips: ["我想喝咖啡 (Coffee)", "我想喝茶 (Tea)"] },
+    { trigger: "咖啡", mei: "好的！热咖啡还是冰咖啡？", pinyin: "Hǎo de! Rè kāfēi háishì bīng kāfēi?", english: "Great! Hot coffee or iced coffee?", chips: ["热咖啡，谢谢 (Hot)", "冰咖啡，谢谢 (Iced)"] },
+    { trigger: "茶", mei: "好的！绿茶还是红茶？", pinyin: "Hǎo de! Lǜchá háishì hóngchá?", english: "Great! Green tea or black tea?", chips: ["绿茶，谢谢 (Green)", "红茶，谢谢 (Black)"] },
+    { mei: "一共二十块钱。请问怎么支付？", pinyin: "Yígòng èrshí kuài qián. Qǐngwèn zěnme zhīfù?", english: "20 yuan total. How would you like to pay?", chips: ["微信支付 (WeChat)", "支付宝 (Alipay)", "现金 (Cash)"] },
+    { mei: "好的，收到您的付款了！这是您的饮品，祝您有愉快的一天！", pinyin: "Hǎo de, shōudào nín de fùkuǎn le! Zhè shì nín de yǐnpǐn, zhù nín yǒu yúkuài de yì tiān!", english: "Payment received! Here is your drink, have a nice day!", chips: ["谢谢！再见！(Thanks! Bye!)"] }
+  ];
+  let roleplayStage = 0;
+
+  function initRoleplay() {
+    document.getElementById('chat-scroller').innerHTML = '';
+    roleplayStage = 0; addMeiMessage(roleplayScript[0]);
+  }
+  function resetRoleplay() { initRoleplay(); }
+
+  function addMeiMessage(item) {
+    const scroller = document.getElementById('chat-scroller');
+    const row = document.createElement('div');
+    row.className = 'bubble-row mei';
+    row.innerHTML = `
+      <div class="avatar" style="border-color: var(--duo-purple);">☕</div>
+      <div class="bubble mei">
+        <div class="bubble-hanzi">${item.mei}</div>
+        <div class="bubble-pinyin">${item.pinyin}</div>
+        <div class="bubble-trans">${item.english}</div>
+      </div>
+    `;
+    scroller.appendChild(row); scroller.scrollTop = scroller.scrollHeight;
+    speakChinese(item.mei); renderQuickReplies(item.chips || []);
+  }
+
+  function renderQuickReplies(chips) {
+    const container = document.getElementById('quick-replies');
+    container.innerHTML = '';
+    chips.forEach(chipText => {
+      const pill = document.createElement('div');
+      pill.className = 'quick-chip'; pill.textContent = chipText;
+      pill.onclick = () => { sfx.playTap(); handleUserReply(chipText.split('(')[0].trim()); };
+      container.appendChild(pill);
+    });
+  }
+
+  function handleUserReply(text) {
+    const scroller = document.getElementById('chat-scroller');
+    const row = document.createElement('div');
+    row.className = 'bubble-row user';
+    row.innerHTML = `<div class="bubble user"><div class="bubble-hanzi">${text}</div></div>`;
+    scroller.appendChild(row); scroller.scrollTop = scroller.scrollHeight;
+
+    roleplayStage++;
+    setTimeout(() => {
+      if (roleplayStage === 1) addMeiMessage(text.includes("茶") ? roleplayScript[2] : roleplayScript[1]);
+      else if (roleplayStage === 2) addMeiMessage(roleplayScript[3]);
+      else if (roleplayStage === 3) addMeiMessage(roleplayScript[4]);
+      else { sfx.playFanfare(); userProgress.xp += 15; saveState(); alert("🎉 Roleplay complete! (+15 XP)"); }
+    }, 900);
+  }
+
+  function sendUserMessage() {
+    const input = document.getElementById('chat-input');
+    const val = input.value.trim();
+    if (val) { handleUserReply(val); input.value = ''; }
+  }
+  function handleChatKey(e) { if (e.key === 'Enter') sendUserMessage(); }
+
+  /* Leaderboard */
+  const LEADERBOARD_USERS = [
+    { name: "Lin Wei", xp: 520, flag: "🇨🇳", rank: 1 },
+    { name: "Sarah M.", xp: 480, flag: "🇬🇧", rank: 2 },
+    { name: "Alex K.", xp: 390, flag: "🇺🇸", rank: 3 },
+    { name: "You (Explorer)", xp: 160, flag: "🐼", rank: 4, isUser: true },
+    { name: "Kenji S.", xp: 140, flag: "🇯🇵", rank: 5 }
+  ];
+
+  function renderLeaderboard() {
+    const container = document.getElementById('leaderboard-list');
+    container.innerHTML = '';
+    LEADERBOARD_USERS.forEach((u) => {
+      const xpVal = u.isUser ? userProgress.xp : u.xp;
+      const row = document.createElement('div');
+      row.className = 'rank-row';
+      if (u.isUser) { row.style.borderColor = 'var(--duo-green)'; row.style.background = 'rgba(88, 204, 2, 0.08)'; }
+      const topClass = u.rank === 1 ? 'top1' : (u.rank === 2 ? 'top2' : (u.rank === 3 ? 'top3' : ''));
+      row.innerHTML = `
+        <div class="rank-num ${topClass}">${u.rank}</div>
+        <div style="font-size: 24px; margin: 0 12px;">${u.flag}</div>
+        <div style="flex: 1; font-weight: 800; font-size: 15px;">${u.name}</div>
+        <div style="font-weight: 900; color: var(--duo-purple); font-size: 15px;">${xpVal} XP</div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function switchTab(tabKey, tabBtn) {
+    sfx.playTap();
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${tabKey}`).classList.add('active');
+    if (tabBtn) tabBtn.classList.add('active');
+
+    if (tabKey === 'words') renderCurrentCard();
+    if (tabKey === 'chat' && document.getElementById('chat-scroller').children.length === 0) initRoleplay();
+    if (tabKey === 'ranks') renderLeaderboard();
+  }
+
+  document.getElementById('sfx-toggle').onclick = () => {
+    sfx.enabled = !sfx.enabled;
+    document.getElementById('sfx-icon').textContent = sfx.enabled ? 'volume_up' : 'volume_off';
+    if (sfx.enabled) sfx.playTap();
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    loadSavedState();
+    renderPathTree();
+    renderCurrentCard();
+    renderLeaderboard();
+  });
+</script>
+
+</body>
+</html>
