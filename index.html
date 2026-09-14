@@ -1,103 +1,1791 @@
-package com.example.data.local
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>HanYu Learn - Mandarin Chinese</title>
+  
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,600,1,0" />
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.Transaction
-import kotlinx.coroutines.flow.Flow
+  <!-- Firebase App & Firestore SDKs (v10 compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-@Dao
-interface UserProgressDao {
+  <style>
+    :root {
+      --bg-dark: #131f24;
+      --surface-dark: #1b2a32;
+      --card-dark: #203540;
+      --border-dark: #2c4755;
+      --duo-green: #58cc02;
+      --duo-green-dark: #46a302;
+      --duo-green-light: #79e01f;
+      --duo-blue: #1cb0f6;
+      --duo-blue-dark: #1899d6;
+      --duo-gold: #ffc800;
+      --duo-gold-dark: #e5a400;
+      --duo-red: #ff4b4b;
+      --duo-red-dark: #d63838;
+      --duo-purple: #ce82ff;
+      --duo-purple-dark: #a855f7;
+      --text-main: #ffffff;
+      --text-muted: #8ca2ad;
+      --font-family: 'Nunito', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --shadow-btn: 0 4px 0;
+    }
 
-    @Query("SELECT * FROM user_progress WHERE id = 1")
-    fun getUserProgressFlow(): Flow<UserProgressEntity?>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
 
-    @Query("SELECT * FROM user_progress WHERE id = 1")
-    suspend fun getUserProgress(): UserProgressEntity?
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      overflow-x: hidden;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertOrUpdateProgress(progress: UserProgressEntity)
+    #app-container {
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-dark);
+      position: relative;
+      box-shadow: 0 0 40px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
 
-    @Query("SELECT * FROM lesson_records")
-    fun getAllLessonRecordsFlow(): Flow<List<LessonRecordEntity>>
+    /* Top Stats Bar */
+    header.stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: var(--surface-dark);
+      border-bottom: 2px solid var(--border-dark);
+      z-index: 100;
+    }
 
-    @Query("SELECT * FROM lesson_records WHERE lessonId = :lessonId")
-    suspend fun getLessonRecord(lessonId: String): LessonRecordEntity?
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 12px;
+      transition: transform 0.1s ease;
+    }
+    .stat-badge:active {
+      transform: scale(0.95);
+    }
+    .stat-badge.streak { color: #ff9600; }
+    .stat-badge.gems { color: var(--duo-gold); }
+    .stat-badge.hearts { color: var(--duo-red); }
+    .stat-badge.sfx { color: var(--text-muted); }
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertLessonRecord(record: LessonRecordEntity)
+    .stat-icon {
+      font-size: 22px;
+    }
 
-    @Query("SELECT * FROM learned_words ORDER BY timesReviewed DESC")
-    fun getLearnedWordsFlow(): Flow<List<LearnedWordEntity>>
+    /* Content Area */
+    main.view-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: 80px;
+      scroll-behavior: smooth;
+    }
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertLearnedWords(words: List<LearnedWordEntity>)
+    /* Tab Views */
+    .tab-content {
+      display: none;
+      padding: 16px;
+      animation: fadeIn 0.25s ease forwards;
+    }
+    .tab-content.active {
+      display: block;
+    }
 
-    @Query("UPDATE user_progress SET hearts = :newHearts WHERE id = 1")
-    suspend fun updateHearts(newHearts: Int)
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-    @Query("UPDATE user_progress SET gems = gems + :gemsToAdd WHERE id = 1")
-    suspend fun addGems(gemsToAdd: Int)
+    /* Bottom Navigation Bar */
+    nav.bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 68px;
+      background: var(--surface-dark);
+      border-top: 2px solid var(--border-dark);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
 
-    @Query("UPDATE user_progress SET totalXp = totalXp + :xpToAdd WHERE id = 1")
-    suspend fun addXp(xpToAdd: Int)
+    .nav-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 800;
+      transition: color 0.15s, transform 0.1s;
+      padding: 6px 12px;
+      border-radius: 12px;
+    }
+    .nav-tab:active {
+      transform: scale(0.92);
+    }
+    .nav-tab.active {
+      color: var(--duo-green);
+    }
+    .nav-tab .material-symbols-rounded {
+      font-size: 26px;
+    }
 
-    @Transaction
-    suspend fun recordCompletedLesson(
-        lessonId: String,
-        score: Int,
-        totalQuestions: Int,
-        earnedXp: Int,
-        earnedGems: Int,
-        newWords: List<LearnedWordEntity>
-    ) {
-        val currentProgress = getUserProgress() ?: UserProgressEntity()
-        val existingRecord = getLessonRecord(lessonId)
+    /* 3D Duolingo Style Buttons */
+    .duo-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.08s ease;
+      position: relative;
+      padding: 14px 24px;
+      font-size: 15px;
+      width: 100%;
+    }
 
-        val updatedCompletedLessons = if (existingRecord == null || !existingRecord.isCompleted) {
-            currentProgress.completedLessonsCount + 1
+    .duo-btn:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: none !important;
+    }
+
+    .duo-btn-green {
+      background: var(--duo-green);
+      color: #fff;
+      box-shadow: 0 4px 0 var(--duo-green-dark);
+    }
+    .duo-btn-blue {
+      background: var(--duo-blue);
+      color: #fff;
+      box-shadow: 0 4px 0 var(--duo-blue-dark);
+    }
+    .duo-btn-gold {
+      background: var(--duo-gold);
+      color: #3b2c00;
+      box-shadow: 0 4px 0 var(--duo-gold-dark);
+    }
+    .duo-btn-outline {
+      background: var(--card-dark);
+      color: var(--duo-blue);
+      border: 2px solid var(--border-dark);
+      box-shadow: 0 4px 0 var(--border-dark);
+    }
+    .duo-btn:disabled {
+      background: #37464f;
+      color: #6d828d;
+      box-shadow: 0 4px 0 #2b3840;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Section Cards */
+    .card {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    /* Unit Banner */
+    .unit-banner {
+      background: linear-gradient(135deg, #1b5e20, var(--duo-green-dark));
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      color: white;
+      box-shadow: 0 4px 0 #144417;
+      position: relative;
+      overflow: hidden;
+    }
+    .unit-banner::after {
+      content: "HSK 1";
+      position: absolute;
+      right: -10px;
+      bottom: -15px;
+      font-size: 64px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.08);
+      pointer-events: none;
+    }
+    .unit-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 800;
+      opacity: 0.9;
+    }
+    .unit-desc {
+      font-size: 19px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    /* Learning Path Tree */
+    .path-tree {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 10px 0 30px;
+    }
+
+    .path-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s;
+    }
+    .path-node:active {
+      transform: scale(0.92);
+    }
+
+    .node-button {
+      width: 76px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--duo-green);
+      box-shadow: 0 6px 0 var(--duo-green-dark);
+      color: white;
+      position: relative;
+      transition: all 0.1s;
+    }
+    .node-button.completed {
+      background: var(--duo-gold);
+      box-shadow: 0 6px 0 var(--duo-gold-dark);
+      color: #3b2c00;
+    }
+    .node-button.locked {
+      background: #37464f;
+      box-shadow: 0 6px 0 #263339;
+      color: #72848f;
+      cursor: not-allowed;
+    }
+    .node-button .material-symbols-rounded {
+      font-size: 34px;
+    }
+
+    .node-crown {
+      position: absolute;
+      top: -10px;
+      right: -2px;
+      background: var(--duo-gold);
+      color: #3b2c00;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--surface-dark);
+      font-size: 14px;
+      box-shadow: 0 2px 0 var(--duo-gold-dark);
+    }
+
+    .node-label {
+      margin-top: 8px;
+      font-weight: 800;
+      font-size: 14px;
+      text-align: center;
+      color: var(--text-main);
+      max-width: 140px;
+    }
+
+    .node-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    /* Lesson Player Modal */
+    #lesson-modal {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-dark);
+      display: none;
+      flex-direction: column;
+      z-index: 1000;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    #lesson-modal.active {
+      display: flex;
+    }
+
+    .lesson-header {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      gap: 16px;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 14px;
+      background: #2b3940;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--duo-green);
+      border-radius: 10px;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.3);
+    }
+
+    .lesson-hearts {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--duo-red);
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .lesson-body {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .question-prompt {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+
+    .hanzi-hero {
+      text-align: center;
+      margin: 16px 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hero-chinese {
+      font-size: 52px;
+      font-weight: 900;
+      color: #fff;
+      font-family: 'Noto Sans SC', sans-serif;
+      line-height: 1.2;
+    }
+    .hero-pinyin {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--duo-blue);
+      margin-top: 4px;
+    }
+
+    .audio-play-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--duo-blue);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 14px;
+      margin-top: 12px;
+      cursor: pointer;
+      box-shadow: 0 3px 0 var(--duo-blue-dark);
+      transition: transform 0.1s;
+    }
+    .audio-play-pill:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    /* Question Options */
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: auto;
+      margin-bottom: 20px;
+    }
+
+    .option-card {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      font-weight: 800;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 3px 0 var(--border-dark);
+      transition: all 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .option-card:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+    .option-card.selected {
+      border-color: var(--duo-blue);
+      background: rgba(28, 176, 246, 0.15);
+      color: var(--duo-blue);
+      box-shadow: 0 3px 0 var(--duo-blue-dark);
+    }
+
+    /* Word Bank Styles */
+    .word-bank-tray {
+      min-height: 56px;
+      border-bottom: 2px solid var(--border-dark);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 0 16px;
+      margin-bottom: 24px;
+    }
+    .word-bank-pool {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .chip {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      box-shadow: 0 3px 0 var(--border-dark);
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+      color: white;
+      transition: transform 0.1s;
+    }
+    .chip:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+    .chip.used {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    /* Lesson Bottom Feedback Sheet */
+    .lesson-footer {
+      padding: 16px;
+      background: var(--surface-dark);
+      border-top: 2px solid var(--border-dark);
+      position: relative;
+    }
+    .feedback-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 20px 20px 24px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      animation: slideUp 0.2s ease forwards;
+    }
+    .feedback-sheet.active {
+      display: flex;
+    }
+    .feedback-sheet.correct {
+      background: #143521;
+      border-top: 3px solid var(--duo-green);
+      color: var(--duo-green-light);
+    }
+    .feedback-sheet.incorrect {
+      background: #39191e;
+      border-top: 3px solid var(--duo-red);
+      color: #ff9191;
+    }
+
+    .feedback-title {
+      font-size: 20px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feedback-desc {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    /* Words Flashcards Tab */
+    .flashcard-wrapper {
+      perspective: 1000px;
+      margin: 20px auto;
+      width: 100%;
+      height: 320px;
+      cursor: pointer;
+    }
+    .flashcard-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.5s;
+      transform-style: preserve-3d;
+      border-radius: var(--radius-lg);
+    }
+    .flashcard-wrapper.flipped .flashcard-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flashcard-front, .flashcard-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid var(--border-dark);
+      background: var(--surface-dark);
+      box-shadow: 0 6px 0 var(--border-dark);
+    }
+    .flashcard-back {
+      transform: rotateY(180deg);
+      background: #192730;
+      border-color: var(--duo-blue);
+      box-shadow: 0 6px 0 var(--duo-blue-dark);
+    }
+
+    /* Roleplay Chat Tab */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 150px);
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .bubble-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      max-width: 85%;
+    }
+    .bubble-row.mei {
+      align-self: flex-start;
+    }
+    .bubble-row.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #37464f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 20px;
+      border: 2px solid var(--duo-green);
+    }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 15px;
+      position: relative;
+    }
+    .bubble.mei {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      color: white;
+      border-top-left-radius: 4px;
+    }
+    .bubble.user {
+      background: var(--duo-blue);
+      color: white;
+      border-top-right-radius: 4px;
+    }
+
+    .bubble-hanzi {
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'Noto Sans SC', sans-serif;
+    }
+    .bubble-pinyin {
+      font-size: 13px;
+      color: #79caff;
+      margin-top: 2px;
+      font-weight: 700;
+    }
+    .bubble-trans {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .chat-input-bar {
+      display: flex;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 2px solid var(--border-dark);
+    }
+    .chat-input {
+      flex: 1;
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      color: white;
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+    }
+    .chat-input:focus {
+      border-color: var(--duo-blue);
+    }
+
+    .quick-chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 6px 0 10px;
+    }
+    .quick-chip {
+      white-space: nowrap;
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--duo-blue);
+      cursor: pointer;
+    }
+
+    /* Leaderboard & Profile */
+    .rank-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--surface-dark);
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      border: 2px solid var(--border-dark);
+    }
+    .rank-num {
+      width: 28px;
+      font-weight: 900;
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+    .rank-num.top1 { color: var(--duo-gold); font-size: 20px; }
+    .rank-num.top2 { color: #d1d5db; font-size: 18px; }
+    .rank-num.top3 { color: #cd7f32; font-size: 18px; }
+
+    .user-stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .stat-card {
+      background: var(--surface-dark);
+      border: 2px solid var(--border-dark);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+  
+  <!-- Sticky Stats Bar -->
+  <header class="stats-bar">
+    <div class="stat-badge streak" id="streak-badge" title="Daily Streak">
+      <span class="material-symbols-rounded stat-icon">local_fire_department</span>
+      <span id="stat-streak-val">3</span>
+    </div>
+    <div class="stat-badge gems" id="gems-badge" title="Gems">
+      <span class="material-symbols-rounded stat-icon">diamond</span>
+      <span id="stat-gems-val">120</span>
+    </div>
+    <div class="stat-badge hearts" id="hearts-badge" title="Hearts (Lives)">
+      <span class="material-symbols-rounded stat-icon">favorite</span>
+      <span id="stat-hearts-val">5</span>
+    </div>
+    <div class="stat-badge sfx" id="sfx-toggle" title="Toggle Sound">
+      <span class="material-symbols-rounded stat-icon" id="sfx-icon">volume_up</span>
+    </div>
+  </header>
+
+  <!-- Main Scrollable Views -->
+  <main class="view-container">
+    
+    <!-- 1. Learn (Dashboard Path) -->
+    <section id="tab-learn" class="tab-content active">
+      <div class="unit-banner">
+        <div class="unit-title">Unit 1 • The Basics</div>
+        <div class="unit-desc">Say hello, count to 10, and greet friends</div>
+      </div>
+
+      <div class="path-tree" id="path-tree-container">
+        <!-- Generated by JavaScript -->
+      </div>
+    </section>
+
+    <!-- 2. Flashcards / Words Tab -->
+    <section id="tab-words" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h2 style="font-size: 20px; font-weight: 800;">HSK 1 Vocabulary</h2>
+        <span id="card-counter" style="font-weight: 700; color: var(--text-muted); font-size: 14px;">1 / 20</span>
+      </div>
+
+      <div class="flashcard-wrapper" id="flashcard" onclick="flipCard()">
+        <div class="flashcard-inner">
+          <div class="flashcard-front">
+            <span style="font-size: 13px; font-weight: 800; color: var(--duo-blue); text-transform: uppercase;">Tap to reveal</span>
+            <div id="fc-hanzi" style="font-size: 64px; font-weight: 900; margin: 16px 0; font-family: 'Noto Sans SC';">你好</div>
+            <div id="fc-pinyin" style="font-size: 22px; font-weight: 800; color: var(--duo-gold);">nǐ hǎo</div>
+            <div class="audio-play-pill" onclick="event.stopPropagation(); playCurrentCardAudio()">
+              <span class="material-symbols-rounded" style="font-size: 18px;">volume_up</span> Listen
+            </div>
+          </div>
+          <div class="flashcard-back">
+            <span style="font-size: 13px; font-weight: 800; color: var(--duo-green); text-transform: uppercase;">English Translation</span>
+            <div id="fc-english" style="font-size: 32px; font-weight: 900; margin: 16px 0;">Hello</div>
+            <div id="fc-example" style="font-size: 14px; color: var(--text-muted); text-align: center; max-width: 260px;">
+              你好！很高兴认识你。(Hello! Nice to meet you.)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button class="duo-btn duo-btn-outline" onclick="prevCard()">
+          <span class="material-symbols-rounded">arrow_back</span> Previous
+        </button>
+        <button class="duo-btn duo-btn-green" onclick="nextCard()">
+          Next <span class="material-symbols-rounded">arrow_forward</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. Mei Roleplay Chat -->
+    <section id="tab-chat" class="tab-content">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="avatar" style="border-color: var(--duo-purple);">☕</div>
+          <div>
+            <div style="font-weight: 800; font-size: 16px;">Mei (咖啡师)</div>
+            <div style="font-size: 12px; color: var(--duo-green);">● Online • Beijing Coffee Shop</div>
+          </div>
+        </div>
+        <button class="duo-btn duo-btn-outline" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="resetRoleplay()">
+          Restart
+        </button>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-scroller">
+          <!-- Chat messages dynamically inserted -->
+        </div>
+
+        <div class="quick-chips" id="quick-replies">
+          <!-- Quick answer chips -->
+        </div>
+
+        <div class="chat-input-bar">
+          <input type="text" id="chat-input" class="chat-input" placeholder="Type in Chinese or Pinyin..." onkeypress="handleChatKey(event)" />
+          <button class="duo-btn duo-btn-green" style="width: auto; padding: 0 18px;" onclick="sendUserMessage()">
+            <span class="material-symbols-rounded">send</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Leaderboard -->
+    <section id="tab-ranks" class="tab-content">
+      <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 6px;">Gold League 🏆</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Top 3 advance to the Diamond League in 2 days!</p>
+
+      <div id="leaderboard-list">
+        <!-- Dynamically rendered -->
+      </div>
+    </section>
+
+    <!-- 5. Profile & Settings -->
+    <section id="tab-profile" class="tab-content">
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+        <div class="avatar" style="width: 64px; height: 64px; font-size: 32px;">🐼</div>
+        <div>
+          <h2 style="font-size: 22px; font-weight: 900;">Mandarin Explorer</h2>
+          <div style="font-size: 13px; color: var(--text-muted);">HSK 1 Beginner • Joined 2026</div>
+        </div>
+      </div>
+
+      <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 10px;">Overview Statistics</h3>
+      <div class="user-stat-grid">
+        <div class="stat-card">
+          <span class="material-symbols-rounded" style="font-size: 32px; color: #ff9600;">local_fire_department</span>
+          <div>
+            <div style="font-size: 20px; font-weight: 900;" id="prof-streak">3</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">DAY STREAK</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-rounded" style="font-size: 32px; color: var(--duo-purple);">bolt</span>
+          <div>
+            <div style="font-size: 20px; font-weight: 900;" id="prof-xp">160</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">TOTAL XP</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-rounded" style="font-size: 32px; color: var(--duo-gold);">diamond</span>
+          <div>
+            <div style="font-size: 20px; font-weight: 900;" id="prof-gems">120</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">GEMS</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-rounded" style="font-size: 32px; color: var(--duo-green);">menu_book</span>
+          <div>
+            <div style="font-size: 20px; font-weight: 900;" id="prof-words">28</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">WORDS MASTERED</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 24px;">
+        <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 8px;">Cloud Sync (Firebase)</h4>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Progress automatically synchronizes locally and will replicate to your Firebase Firestore backend if initialized.
+        </p>
+        <button class="duo-btn duo-btn-outline" onclick="refillHearts()">
+          <span class="material-symbols-rounded">favorite</span> Refill Hearts (Free)
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-tab active" onclick="switchTab('learn', this)">
+      <span class="material-symbols-rounded">school</span>
+      Learn
+    </button>
+    <button class="nav-tab" onclick="switchTab('words', this)">
+      <span class="material-symbols-rounded">translate</span>
+      Words
+    </button>
+    <button class="nav-tab" onclick="switchTab('chat', this)">
+      <span class="material-symbols-rounded">chat</span>
+      Mei AI
+    </button>
+    <button class="nav-tab" onclick="switchTab('ranks', this)">
+      <span class="material-symbols-rounded">leaderboard</span>
+      Ranks
+    </button>
+    <button class="nav-tab" onclick="switchTab('profile', this)">
+      <span class="material-symbols-rounded">person</span>
+      Profile
+    </button>
+  </nav>
+
+  <!-- Interactive Lesson Modal -->
+  <div id="lesson-modal">
+    <div class="lesson-header">
+      <button class="close-btn" onclick="closeLesson()">&times;</button>
+      <div class="progress-track">
+        <div class="progress-fill" id="lesson-progress-bar" style="width: 0%;"></div>
+      </div>
+      <div class="lesson-hearts">
+        <span class="material-symbols-rounded">favorite</span>
+        <span id="lesson-hearts-val">5</span>
+      </div>
+    </div>
+
+    <div class="lesson-body" id="lesson-body">
+      <!-- Injected per question -->
+    </div>
+
+    <div class="lesson-footer">
+      <button class="duo-btn duo-btn-green" id="lesson-check-btn" onclick="checkCurrentAnswer()">Check</button>
+      
+      <div class="feedback-sheet" id="feedback-sheet">
+        <div class="feedback-title" id="fb-title">
+          <span class="material-symbols-rounded" id="fb-icon">check_circle</span>
+          <span id="fb-heading">Nicely done!</span>
+        </div>
+        <div class="feedback-desc" id="fb-desc">Correct meaning: Hello</div>
+        <button class="duo-btn duo-btn-green" id="fb-continue-btn" onclick="nextQuestion()">Continue</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* =========================================================================
+     1. WEB AUDIO API SYNTHESIZER (ZERO-LATENCY SOUND EFFECTS)
+     ========================================================================= */
+  class SoundEngine {
+    constructor() {
+      this.ctx = null;
+      this.enabled = true;
+    }
+
+    init() {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+      }
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+    }
+
+    playCorrect() {
+      if (!this.enabled) return;
+      this.init();
+      const now = this.ctx.currentTime;
+      
+      // Note 1: G5 (783.99 Hz)
+      const osc1 = this.ctx.createOscillator();
+      const gain1 = this.ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(783.99, now);
+      gain1.gain.setValueAtTime(0.3, now);
+      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc1.connect(gain1);
+      gain1.connect(this.ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.16);
+
+      // Note 2: C6 (1046.50 Hz)
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1046.50, now + 0.12);
+      gain2.gain.setValueAtTime(0.35, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc2.connect(gain2);
+      gain2.connect(this.ctx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.36);
+    }
+
+    playIncorrect() {
+      if (!this.enabled) return;
+      this.init();
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(185, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.25);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.26);
+    }
+
+    playFanfare() {
+      if (!this.enabled) return;
+      this.init();
+      const now = this.ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const startTime = now + (idx * 0.1);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.3, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.32);
+      });
+    }
+
+    playTap() {
+      if (!this.enabled) return;
+      this.init();
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    }
+  }
+
+  const sfx = new SoundEngine();
+
+  /* =========================================================================
+     2. TEXT-TO-SPEECH (MANDARIN CHINESE VOICE)
+     ========================================================================= */
+  function speakChinese(text) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[a-zA-Z()]/g, '').trim();
+    const utterance = new SpeechSynthesisUtterance(cleanText || text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 0.85;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  /* =========================================================================
+     3. FIREBASE & LOCAL STORAGE PERSISTENCE
+     ========================================================================= */
+  // Optional Firebase Config (Replace with your actual Firebase project config)
+  const firebaseConfig = {
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdef123456"
+  };
+
+  let db = null;
+  try {
+    if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      console.log("Firebase initialized successfully.");
+    }
+  } catch(e) {
+    console.warn("Firebase not configured; using local storage fallback.", e);
+  }
+
+  // App User State
+  let userProgress = {
+    streak: 3,
+    gems: 120,
+    hearts: 5,
+    xp: 160,
+    completedLessons: ['u1_l1'],
+    wordsMastered: 28
+  };
+
+  function loadSavedState() {
+    const local = localStorage.getItem('hanyu_user_state');
+    if (local) {
+      try {
+        userProgress = Object.assign(userProgress, JSON.parse(local));
+      } catch(e) {}
+    }
+    updateStatsDisplay();
+  }
+
+  function saveState() {
+    localStorage.setItem('hanyu_user_state', JSON.stringify(userProgress));
+    updateStatsDisplay();
+
+    // Replicate to Firebase if configured
+    if (db) {
+      db.collection('users').doc('demo_learner').set(userProgress, { merge: true })
+        .catch(err => console.log('Firestore sync notice:', err));
+    }
+  }
+
+  function updateStatsDisplay() {
+    document.getElementById('stat-streak-val').textContent = userProgress.streak;
+    document.getElementById('stat-gems-val').textContent = userProgress.gems;
+    document.getElementById('stat-hearts-val').textContent = userProgress.hearts;
+    document.getElementById('prof-streak').textContent = userProgress.streak;
+    document.getElementById('prof-xp').textContent = userProgress.xp;
+    document.getElementById('prof-gems').textContent = userProgress.gems;
+    document.getElementById('prof-words').textContent = userProgress.wordsMastered;
+  }
+
+  function refillHearts() {
+    userProgress.hearts = 5;
+    saveState();
+    sfx.playFanfare();
+    alert("Hearts restored to 5!");
+  }
+
+  /* =========================================================================
+     4. CURRICULUM DATA (HSK 1 LESSONS & VOCABULARY)
+     ========================================================================= */
+  const CURRICULUM_LESSONS = [
+    {
+      id: "u1_l1",
+      title: "Greetings",
+      sub: "你好 & 再见",
+      icon: "handshake",
+      questions: [
+        {
+          type: "multiple_choice",
+          prompt: "What does this mean?",
+          hanzi: "你好",
+          pinyin: "nǐ hǎo",
+          options: ["Thank you", "Hello", "Goodbye", "Sorry"],
+          correct: 1,
+          explanation: "你好 (nǐ hǎo) means 'Hello' in Mandarin."
+        },
+        {
+          type: "word_bank",
+          prompt: "Assemble: 'Goodbye'",
+          targetHanzi: "再见",
+          pinyin: "zàijiàn",
+          pool: ["见", "再", "好", "你", "谢"],
+          correctSequence: ["再", "见"],
+          explanation: "再见 (zàijiàn) literally translates to 'again see' (Goodbye)."
+        },
+        {
+          type: "listening",
+          prompt: "Listen and choose the English meaning:",
+          hanzi: "谢谢",
+          pinyin: "xièxie",
+          options: ["You're welcome", "Thank you", "Good morning", "Excuse me"],
+          correct: 1,
+          explanation: "谢谢 (xièxie) is the standard expression for 'Thank you'."
+        }
+      ]
+    },
+    {
+      id: "u1_l2",
+      title: "Numbers 1-5",
+      sub: "一、二、三...",
+      icon: "pin",
+      questions: [
+        {
+          type: "multiple_choice",
+          prompt: "Select the character for 'Three (3)':",
+          hanzi: "三",
+          pinyin: "sān",
+          options: ["一 (1)", "二 (2)", "三 (3)", "四 (4)"],
+          correct: 2,
+          explanation: "三 (sān) has three horizontal strokes and means 'three'."
+        },
+        {
+          type: "word_bank",
+          prompt: "Assemble: 'One, Two'",
+          targetHanzi: "一 二",
+          pinyin: "yī èr",
+          pool: ["二", "五", "一", "四", "三"],
+          correctSequence: ["一", "二"],
+          explanation: "一 (yī) is 1, 二 (èr) is 2."
+        }
+      ]
+    },
+    {
+      id: "u1_l3",
+      title: "Beverages",
+      sub: "茶 & 咖啡",
+      icon: "coffee",
+      questions: [
+        {
+          type: "multiple_choice",
+          prompt: "What beverage is this?",
+          hanzi: "咖啡",
+          pinyin: "kāfēi",
+          options: ["Milk", "Tea", "Coffee", "Water"],
+          correct: 2,
+          explanation: "咖啡 (kāfēi) is a phonetic borrowing for 'coffee'."
+        },
+        {
+          type: "listening",
+          prompt: "Listen and choose the Chinese character:",
+          hanzi: "茶",
+          pinyin: "chá",
+          options: ["茶 (Tea)", "水 (Water)", "咖啡 (Coffee)", "饭 (Rice)"],
+          correct: 0,
+          explanation: "茶 (chá) means 'Tea'."
+        }
+      ]
+    },
+    {
+      id: "u1_l4",
+      title: "Polite Phrases",
+      sub: "不客气 & 对不起",
+      icon: "sentiment_satisfied",
+      questions: [
+        {
+          type: "multiple_choice",
+          prompt: "Select 'You are welcome':",
+          hanzi: "不客气",
+          pinyin: "bú kèqi",
+          options: ["对不起 (Sorry)", "没关系 (It's okay)", "不客气 (You're welcome)", "再见 (Goodbye)"],
+          correct: 2,
+          explanation: "不客气 (bú kèqi) is the standard response to 谢谢."
+        }
+      ]
+    }
+  ];
+
+  const VOCABULARY_LIST = [
+    { hanzi: "你好", pinyin: "nǐ hǎo", english: "Hello", example: "你好！很高兴认识你。(Hello! Nice to meet you.)" },
+    { hanzi: "谢谢", pinyin: "xièxie", english: "Thank you", example: "非常感谢你的帮助！(Thank you very much for your help!)" },
+    { hanzi: "再见", pinyin: "zàijiàn", english: "Goodbye", example: "明天再见！(See you tomorrow!)" },
+    { hanzi: "咖啡", pinyin: "kāfēi", english: "Coffee", example: "我想喝一杯热咖啡。(I would like to drink a hot coffee.)" },
+    { hanzi: "茶", pinyin: "chá", english: "Tea", example: "中国人喜欢喝绿茶。(Chinese people like drinking green tea.)" },
+    { hanzi: "水", pinyin: "shuǐ", english: "Water", example: "请给我一杯水。(Please give me a glass of water.)" },
+    { hanzi: "不客气", pinyin: "bú kèqi", english: "You're welcome", example: "不客气，这是我应该做的。(You're welcome, my pleasure.)" },
+    { hanzi: "对不起", pinyin: "duìbuqǐ", english: "I'm sorry", example: "对不起，我迟到了。(Sorry, I am late.)" },
+    { hanzi: "一", pinyin: "yī", english: "One (1)", example: "一个苹果。(One apple.)" },
+    { hanzi: "二", pinyin: "èr", english: "Two (2)", example: "两块钱。(Two yuan.)" },
+    { hanzi: "三", pinyin: "sān", english: "Three (3)", example: "三个人。(Three people.)" },
+    { hanzi: "四", pinyin: "sì", english: "Four (4)", example: "星期四。(Thursday.)" },
+    { hanzi: "五", pinyin: "wǔ", english: "Five (5)", example: "五本书。(Five books.)" }
+  ];
+
+  /* =========================================================================
+     5. LEARNING PATH RENDERING
+     ========================================================================= */
+  function renderPathTree() {
+    const container = document.getElementById('path-tree-container');
+    container.innerHTML = '';
+
+    CURRICULUM_LESSONS.forEach((lesson, index) => {
+      const isCompleted = userProgress.completedLessons.includes(lesson.id);
+      const isUnlocked = index === 0 || userProgress.completedLessons.includes(CURRICULUM_LESSONS[index - 1].id);
+
+      const node = document.createElement('div');
+      node.className = 'path-node';
+      node.onclick = () => {
+        if (isUnlocked) {
+          sfx.playTap();
+          startLesson(lesson);
         } else {
-            currentProgress.completedLessonsCount
+          sfx.playIncorrect();
+          alert("Complete the previous lesson to unlock this!");
         }
+      };
 
-        insertLessonRecord(
-            LessonRecordEntity(
-                lessonId = lessonId,
-                isCompleted = true,
-                bestScore = maxOf(score, existingRecord?.bestScore ?: 0),
-                totalQuestions = totalQuestions,
-                completedAt = System.currentTimeMillis()
-            )
-        )
+      node.innerHTML = `
+        <div class="node-button ${isCompleted ? 'completed' : (!isUnlocked ? 'locked' : '')}">
+          <span class="material-symbols-rounded">${lesson.icon}</span>
+          ${isCompleted ? '<div class="node-crown">👑</div>' : ''}
+        </div>
+        <div class="node-label">${lesson.title}</div>
+        <div class="node-sub">${lesson.sub}</div>
+      `;
+      container.appendChild(node);
+    });
+  }
 
-        insertOrUpdateProgress(
-            currentProgress.copy(
-                totalXp = currentProgress.totalXp + earnedXp,
-                gems = currentProgress.gems + earnedGems,
-                completedLessonsCount = updatedCompletedLessons
-            )
-        )
+  /* =========================================================================
+     6. INTERACTIVE LESSON ENGINE
+     ========================================================================= */
+  let activeLesson = null;
+  let currentQuestionIndex = 0;
+  let selectedOption = null;
+  let userWordSequence = [];
 
-        if (newWords.isNotEmpty()) {
-            insertLearnedWords(newWords)
-        }
+  function startLesson(lesson) {
+    if (userProgress.hearts <= 0) {
+      alert("You are out of hearts! Tap 'Refill Hearts' in your profile to keep practicing.");
+      return;
     }
 
-    @Query("DELETE FROM user_progress")
-    suspend fun clearUserProgress()
+    activeLesson = lesson;
+    currentQuestionIndex = 0;
+    selectedOption = null;
+    userWordSequence = [];
 
-    @Query("DELETE FROM lesson_records")
-    suspend fun clearLessonRecords()
+    document.getElementById('lesson-hearts-val').textContent = userProgress.hearts;
+    document.getElementById('lesson-modal').classList.add('active');
+    loadQuestion();
+  }
 
-    @Query("DELETE FROM learned_words")
-    suspend fun clearLearnedWords()
-
-    @Transaction
-    suspend fun resetProgress() {
-        clearUserProgress()
-        clearLessonRecords()
-        clearLearnedWords()
-        insertOrUpdateProgress(UserProgressEntity())
+  function closeLesson() {
+    if (confirm("Are you sure you want to quit this lesson? Progress will be lost.")) {
+      document.getElementById('lesson-modal').classList.remove('active');
     }
-}
+  }
+
+  function loadQuestion() {
+    const q = activeLesson.questions[currentQuestionIndex];
+    selectedOption = null;
+    userWordSequence = [];
+
+    // Hide feedback sheet & reset button
+    document.getElementById('feedback-sheet').classList.remove('active', 'correct', 'incorrect');
+    const checkBtn = document.getElementById('lesson-check-btn');
+    checkBtn.style.display = 'block';
+    checkBtn.disabled = true;
+
+    // Update progress bar
+    const percent = (currentQuestionIndex / activeLesson.questions.length) * 100;
+    document.getElementById('lesson-progress-bar').style.width = `${percent}%`;
+
+    const body = document.getElementById('lesson-body');
+    body.innerHTML = `
+      <div class="question-prompt">${q.prompt}</div>
+      <div class="hanzi-hero">
+        <div class="hero-chinese">${q.hanzi}</div>
+        <div class="hero-pinyin">${q.pinyin}</div>
+        <div class="audio-play-pill" onclick="speakChinese('${q.hanzi}')">
+          <span class="material-symbols-rounded" style="font-size: 18px;">volume_up</span> Hear pronunciation
+        </div>
+      </div>
+    `;
+
+    // Render interactive answers depending on type
+    if (q.type === 'multiple_choice' || q.type === 'listening') {
+      const grid = document.createElement('div');
+      grid.className = 'options-grid';
+
+      q.options.forEach((optText, idx) => {
+        const optCard = document.createElement('div');
+        optCard.className = 'option-card';
+        optCard.textContent = optText;
+        optCard.onclick = () => {
+          sfx.playTap();
+          document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+          optCard.classList.add('selected');
+          selectedOption = idx;
+          checkBtn.disabled = false;
+        };
+        grid.appendChild(optCard);
+      });
+      body.appendChild(grid);
+
+      if (q.type === 'listening') {
+        speakChinese(q.hanzi);
+      }
+    } else if (q.type === 'word_bank') {
+      const tray = document.createElement('div');
+      tray.className = 'word-bank-tray';
+      tray.id = 'word-tray';
+
+      const pool = document.createElement('div');
+      pool.className = 'word-bank-pool';
+
+      q.pool.forEach((word) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = word;
+        chip.onclick = () => {
+          sfx.playTap();
+          userWordSequence.push(word);
+          chip.classList.add('used');
+          renderTray(tray, pool, q);
+          checkBtn.disabled = userWordSequence.length === 0;
+        };
+        pool.appendChild(chip);
+      });
+
+      body.appendChild(tray);
+      body.appendChild(pool);
+    }
+  }
+
+  function renderTray(tray, pool, q) {
+    tray.innerHTML = '';
+    userWordSequence.forEach((word, idx) => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = word;
+      chip.onclick = () => {
+        sfx.playTap();
+        userWordSequence.splice(idx, 1);
+        // re-enable chip in pool
+        const match = Array.from(pool.children).find(c => c.textContent === word && c.classList.contains('used'));
+        if (match) match.classList.remove('used');
+        renderTray(tray, pool, q);
+        document.getElementById('lesson-check-btn').disabled = userWordSequence.length === 0;
+      };
+      tray.appendChild(chip);
+    });
+  }
+
+  function checkCurrentAnswer() {
+    const q = activeLesson.questions[currentQuestionIndex];
+    let isCorrect = false;
+
+    if (q.type === 'multiple_choice' || q.type === 'listening') {
+      isCorrect = selectedOption === q.correct;
+    } else if (q.type === 'word_bank') {
+      isCorrect = JSON.stringify(userWordSequence) === JSON.stringify(q.correctSequence);
+    }
+
+    const sheet = document.getElementById('feedback-sheet');
+    const heading = document.getElementById('fb-heading');
+    const desc = document.getElementById('fb-desc');
+    const icon = document.getElementById('fb-icon');
+    document.getElementById('lesson-check-btn').style.display = 'none';
+
+    if (isCorrect) {
+      sfx.playCorrect();
+      sheet.className = 'feedback-sheet active correct';
+      icon.textContent = 'check_circle';
+      heading.textContent = 'Nicely done!';
+      desc.textContent = q.explanation;
+    } else {
+      sfx.playIncorrect();
+      userProgress.hearts = Math.max(0, userProgress.hearts - 1);
+      document.getElementById('lesson-hearts-val').textContent = userProgress.hearts;
+      saveState();
+
+      sheet.className = 'feedback-sheet active incorrect';
+      icon.textContent = 'cancel';
+      heading.textContent = 'Not quite!';
+      desc.textContent = q.explanation;
+    }
+  }
+
+  function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < activeLesson.questions.length) {
+      loadQuestion();
+    } else {
+      // Lesson Complete!
+      sfx.playFanfare();
+      document.getElementById('lesson-progress-bar').style.width = '100%';
+      
+      // Award XP and Gems
+      userProgress.xp += 25;
+      userProgress.gems += 15;
+      if (!userProgress.completedLessons.includes(activeLesson.id)) {
+        userProgress.completedLessons.push(activeLesson.id);
+      }
+      saveState();
+      renderPathTree();
+
+      alert(`🎉 Lesson Complete!\n\n+25 XP Earned\n+15 Gems Earned`);
+      document.getElementById('lesson-modal').classList.remove('active');
+    }
+  }
+
+  /* =========================================================================
+     7. WORDS / FLASHCARDS TAB
+     ========================================================================= */
+  let currentCardIndex = 0;
+
+  function renderCurrentCard() {
+    const word = VOCABULARY_LIST[currentCardIndex];
+    document.getElementById('fc-hanzi').textContent = word.hanzi;
+    document.getElementById('fc-pinyin').textContent = word.pinyin;
+    document.getElementById('fc-english').textContent = word.english;
+    document.getElementById('fc-example').textContent = word.example;
+    document.getElementById('card-counter').textContent = `${currentCardIndex + 1} / ${VOCABULARY_LIST.length}`;
+    document.getElementById('flashcard').classList.remove('flipped');
+  }
+
+  function flipCard() {
+    sfx.playTap();
+    document.getElementById('flashcard').classList.toggle('flipped');
+  }
+
+  function nextCard() {
+    sfx.playTap();
+    currentCardIndex = (currentCardIndex + 1) % VOCABULARY_LIST.length;
+    renderCurrentCard();
+  }
+
+  function prevCard() {
+    sfx.playTap();
+    currentCardIndex = (currentCardIndex - 1 + VOCABULARY_LIST.length) % VOCABULARY_LIST.length;
+    renderCurrentCard();
+  }
+
+  function playCurrentCardAudio() {
+    const word = VOCABULARY_LIST[currentCardIndex];
+    speakChinese(word.hanzi);
+  }
+
+  /* =========================================================================
+     8. MEI ROLEPLAY COFFEE SHOP CHAT
+     ========================================================================= */
+  const roleplayScript = [
+    {
+      mei: "你好！欢迎光临。请问你想喝点什么？",
+      pinyin: "Nǐ hǎo! Huānyíng guānglín. Qǐngwèn nǐ xiǎng hē diǎn shénme?",
+      english: "Hello! Welcome. What would you like to drink?",
+      chips: ["我想喝咖啡 (I want coffee)", "我想喝茶 (I want tea)"]
+    },
+    {
+      trigger: "咖啡",
+      mei: "好的！热咖啡还是冰咖啡？",
+      pinyin: "Hǎo de! Rè kāfēi háishì bīng kāfēi?",
+      english: "Great! Hot coffee or iced coffee?",
+      chips: ["热咖啡，谢谢 (Hot coffee, thanks)", "冰咖啡，谢谢 (Iced coffee, thanks)"]
+    },
+    {
+      trigger: "茶",
+      mei: "好的！绿茶还是红茶？",
+      pinyin: "Hǎo de! Lǜchá háishì hóngchá?",
+      english: "Great! Green tea or black tea?",
+      chips: ["绿茶，谢谢 (Green tea, thanks)", "红茶，谢谢 (Black tea, thanks)"]
+    },
+    {
+      mei: "一共二十块钱。请问怎么支付？",
+      pinyin: "Yígòng èrshí kuài qián. Qǐngwèn zěnme zhīfù?",
+      english: "Twenty yuan in total. How would you like to pay?",
+      chips: ["微信支付 (WeChat Pay)", "支付宝 (Alipay)", "现金 (Cash)"]
+    },
+    {
+      mei: "好的，收到您的付款了！这是您的饮品，祝您有愉快的一天！",
+      pinyin: "Hǎo de, shōudào nín de fùkuǎn le! Zhè shì nín de yǐnpǐn, zhù nín yǒu yúkuài de yì tiān!",
+      english: "Payment received! Here is your drink, have a wonderful day!",
+      chips: ["谢谢！再见！(Thank you! Goodbye!)"]
+    }
+  ];
+
+  let roleplayStage = 0;
+
+  function initRoleplay() {
+    const scroller = document.getElementById('chat-scroller');
+    scroller.innerHTML = '';
+    roleplayStage = 0;
+    addMeiMessage(roleplayScript[0]);
+  }
+
+  function resetRoleplay() {
+    initRoleplay();
+  }
+
+  function addMeiMessage(item) {
+    const scroller = document.getElementById('chat-scroller');
+    const row = document.createElement('div');
+    row.className = 'bubble-row mei';
+    row.innerHTML = `
+      <div class="avatar" style="border-color: var(--duo-purple);">☕</div>
+      <div class="bubble mei">
+        <div class="bubble-hanzi">${item.mei}</div>
+        <div class="bubble-pinyin">${item.pinyin}</div>
+        <div class="bubble-trans">${item.english}</div>
+      </div>
+    `;
+    scroller.appendChild(row);
+    scroller.scrollTop = scroller.scrollHeight;
+    speakChinese(item.mei);
+
+    // Set quick reply pills
+    renderQuickReplies(item.chips || []);
+  }
+
+  function renderQuickReplies(chips) {
+    const container = document.getElementById('quick-replies');
+    container.innerHTML = '';
+    chips.forEach(chipText => {
+      const pill = document.createElement('div');
+      pill.className = 'quick-chip';
+      pill.textContent = chipText;
+      pill.onclick = () => {
+        sfx.playTap();
+        const cleanChinese = chipText.split('(')[0].trim();
+        handleUserReply(cleanChinese);
+      };
+      container.appendChild(pill);
+    });
+  }
+
+  function handleUserReply(text) {
+    const scroller = document.getElementById('chat-scroller');
+    const row = document.createElement('div');
+    row.className = 'bubble-row user';
+    row.innerHTML = `
+      <div class="bubble user">
+        <div class="bubble-hanzi">${text}</div>
+      </div>
+    `;
+    scroller.appendChild(row);
+    scroller.scrollTop = scroller.scrollHeight;
+
+    // Advance roleplay logic
+    roleplayStage++;
+    setTimeout(() => {
+      if (roleplayStage === 1) {
+        if (text.includes("茶")) {
+          addMeiMessage(roleplayScript[2]);
+        } else {
+          addMeiMessage(roleplayScript[1]);
+        }
+      } else if (roleplayStage === 2) {
+        addMeiMessage(roleplayScript[3]);
+      } else if (roleplayStage === 3) {
+        addMeiMessage(roleplayScript[4]);
+      } else {
+        sfx.playFanfare();
+        userProgress.xp += 15;
+        saveState();
+        alert("🎉 Roleplay complete! You successfully ordered a drink in Mandarin (+15 XP).");
+      }
+    }, 900);
+  }
+
+  function sendUserMessage() {
+    const input = document.getElementById('chat-input');
+    const val = input.value.trim();
+    if (val) {
+      handleUserReply(val);
+      input.value = '';
+    }
+  }
+
+  function handleChatKey(e) {
+    if (e.key === 'Enter') {
+      sendUserMessage();
+    }
+  }
+
+  /* =========================================================================
+     9. LEADERBOARD RENDERING
+     ========================================================================= */
+  const LEADERBOARD_USERS = [
+    { name: "Lin Wei", xp: 420, flag: "🇨🇳", rank: 1 },
+    { name: "Sarah M.", xp: 380, flag: "🇬🇧", rank: 2 },
+    { name: "Alex K.", xp: 290, flag: "🇺🇸", rank: 3 },
+    { name: "You (Explorer)", xp: 160, flag: "🐼", rank: 4, isUser: true },
+    { name: "Kenji S.", xp: 140, flag: "🇯🇵", rank: 5 },
+    { name: "Marie D.", xp: 110, flag: "🇫🇷", rank: 6 }
+  ];
+
+  function renderLeaderboard() {
+    const container = document.getElementById('leaderboard-list');
+    container.innerHTML = '';
+
+    LEADERBOARD_USERS.forEach((u) => {
+      const xpVal = u.isUser ? userProgress.xp : u.xp;
+      const row = document.createElement('div');
+      row.className = 'rank-row';
+      if (u.isUser) {
+        row.style.borderColor = 'var(--duo-green)';
+        row.style.background = 'rgba(88, 204, 2, 0.08)';
+      }
+
+      const topClass = u.rank === 1 ? 'top1' : (u.rank === 2 ? 'top2' : (u.rank === 3 ? 'top3' : ''));
+      row.innerHTML = `
+        <div class="rank-num ${topClass}">${u.rank}</div>
+        <div style="font-size: 24px; margin: 0 12px;">${u.flag}</div>
+        <div style="flex: 1; font-weight: 800; font-size: 15px;">${u.name}</div>
+        <div style="font-weight: 900; color: var(--duo-purple); font-size: 15px;">${xpVal} XP</div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  /* =========================================================================
+     10. TAB NAVIGATION & INITIALIZATION
+     ========================================================================= */
+  function switchTab(tabKey, tabBtn) {
+    sfx.playTap();
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+
+    document.getElementById(`tab-${tabKey}`).classList.add('active');
+    if (tabBtn) tabBtn.classList.add('active');
+
+    if (tabKey === 'words') renderCurrentCard();
+    if (tabKey === 'chat' && document.getElementById('chat-scroller').children.length === 0) initRoleplay();
+    if (tabKey === 'ranks') renderLeaderboard();
+  }
+
+  // Sound toggle button
+  document.getElementById('sfx-toggle').onclick = () => {
+    sfx.enabled = !sfx.enabled;
+    const icon = document.getElementById('sfx-icon');
+    icon.textContent = sfx.enabled ? 'volume_up' : 'volume_off';
+    if (sfx.enabled) sfx.playTap();
+  };
+
+  // On App Launch
+  window.addEventListener('DOMContentLoaded', () => {
+    loadSavedState();
+    renderPathTree();
+    renderCurrentCard();
+    renderLeaderboard();
+  });
+</script>
+
+</body>
+</html>
